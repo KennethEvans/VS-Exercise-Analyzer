@@ -50,5 +50,8 @@ namespace Exercise_Analyzer {
             dlg.ShowDialog();
         }
 
+        private void button_clear_click(object sender, EventArgs e) {
+            textBoxInfo.Text = "";
+        }
     }
 }

@@ -25,7 +25,7 @@ namespace Exercise_Analyzer {
                     return;
                 }
                 if (ext.ToLower().Equals(".gpx")) {
-                    testGpx(fileName);
+                    testGpx2(fileName);
                 } else if (ext.ToLower().Equals(".tcx")) {
                     testTcx2(fileName);
                 }
@@ -67,9 +67,9 @@ namespace Exercise_Analyzer {
                         extensions = wpt.extensions;
                         if (extensions != null) {
                             extensionElements = extensions.Any;
-                            foreach (XmlElement element in extensionElements) {
-                                if (element == null || !element.HasChildNodes) continue;
-                                XmlNodeList children = element.ChildNodes;
+                            foreach (XmlElement elem in extensionElements) {
+                                if (elem == null || !elem.HasChildNodes) continue;
+                                XmlNodeList children = elem.ChildNodes;
                                 foreach (XmlNode child in children) {
                                     if (child.NamespaceURI.Equals(NS_TrackPointExtension_v1)) {
                                         if (child.LocalName.Equals("hr")) hr = child.InnerText;
@@ -156,12 +156,15 @@ namespace Exercise_Analyzer {
             writeInfo("Test TCX with XmlDocument");
             writeInfo(fileName);
 
-            XDocument tcx = XDocument.Load(fileName);
+            XDocument doc = XDocument.Load(fileName);
+            XElement tcx = doc.Root;
 
-            foreach (XElement element in tcx.Descendants().
+            // Note that it is better to use Element in foreach enquiries
+            // Except use Descendents when the Parent is needed
+            foreach (XElement elem in tcx.Descendants().
                 Where(p => p.Name.LocalName == "Name"
                 && p.Parent.Name.LocalName == "Author")) {
-                writeInfo("Author: " + element.Value);
+                writeInfo("Author: " + elem.Value);
             }
 
             IEnumerable<XElement> activities =
@@ -185,22 +188,21 @@ namespace Exercise_Analyzer {
                 where item.Name.LocalName == "Extensions"
                 select item;
             writeInfo("nExtensions=" + other.Count());
-            writeInfo("Data:");
 
             // Loop over Activities, Laps, Tracks, and Trackpoints
             int nActivity = 0, nLaps, nTrks, nTpts;
             double lat, lon, ele;
-            string hr, cad;
+            string hr, cad, time;
             foreach (XElement activity in activities) {
                 writeInfo("Activity " + nActivity++);
-                foreach (XElement element in activity.Descendants().
+                foreach (XElement elem in activity.Descendants().
                     Where(p => p.Name.LocalName == "Name"
                     && p.Parent.Name.LocalName == "Creator")) {
-                    writeInfo("Creator: " + element.Value);
+                    writeInfo("Creator: " + elem.Value);
                 }
-                foreach (XElement element in activity.Elements().
+                foreach (XElement elem in activity.Elements().
                     Where(p => p.Name.LocalName == "Notes")) {
-                    writeInfo("Notes: " + element.Value);
+                    writeInfo("Notes: " + elem.Value);
                 }
                 nLaps = 0;
                 IEnumerable<XElement> laps =
@@ -209,35 +211,28 @@ namespace Exercise_Analyzer {
                     select item;
                 foreach (XElement lap in laps) {
                     writeInfo("Lap " + nLaps++);
-                    foreach (XElement element in lap.Elements().
-                        Where(p => p.Name.LocalName == "TotalTimeSeconds")) {
-                        writeInfo("TotalTimeSeconds: " + element.Value);
+                    foreach (XElement elem in lap.Elements()) {
+                        if (elem.Name.LocalName == "TotalTimeSeconds") {
+                            writeInfo("TotalTimeSeconds: " + elem.Value);
+                        } else if (elem.Name.LocalName == "DistanceMeters") {
+                            writeInfo("DistanceMeters: " + elem.Value);
+                        } else if (elem.Name.LocalName == "AvgSpeed") {
+                            writeInfo("AvgSpeed: " + elem.Value);
+                        } else if (elem.Name.LocalName == "MaximumSpeed") {
+                            writeInfo("MaximumSpeed: " + elem.Value);
+                        } else if (elem.Name.LocalName == "Calories") {
+                            writeInfo("Calories: " + elem.Value);
+                        }
                     }
-                    foreach (XElement element in lap.Elements().
-                        Where(p => p.Name.LocalName == "DistanceMeters")) {
-                        writeInfo("DistanceMeters: " + element.Value);
-                    }
-                    foreach (XElement element in lap.Elements().
-                        Where(p => p.Name.LocalName == "AvgSpeed")) {
-                        writeInfo("AvgSpeed: " + element.Value);
-                    }
-                    foreach (XElement element in lap.Elements().
-                        Where(p => p.Name.LocalName == "MaximumSpeed")) {
-                        writeInfo("MaximumSpeed: " + element.Value);
-                    }
-                    foreach (XElement element in lap.Elements().
-                        Where(p => p.Name.LocalName == "Calories")) {
-                        writeInfo("Calories: " + element.Value);
-                    }
-                    foreach (XElement element in lap.Descendants().
+                    foreach (XElement elem in lap.Descendants().
                         Where(p => p.Name.LocalName == "Value"
                         && p.Parent.Name.LocalName == "AverageHeartRateBpm")) {
-                        writeInfo("AverageHeartRateBpm: " + element.Value);
+                        writeInfo("AverageHeartRateBpm: " + elem.Value);
                     }
-                    foreach (XElement element in lap.Descendants().
+                    foreach (XElement elem in lap.Descendants().
                         Where(p => p.Name.LocalName == "Value"
                         && p.Parent.Name.LocalName == "MaximumHeartRateBpm")) {
-                        writeInfo("MaximumHeartRateBpm: " + element.Value);
+                        writeInfo("MaximumHeartRateBpm: " + elem.Value);
                     }
                     nTrks = 0;
                     IEnumerable<XElement> trks =
@@ -253,38 +248,169 @@ namespace Exercise_Analyzer {
                            select item;
                         foreach (XElement tpt in tpts) {
                             lat = lon = ele = 0;
-                            hr = cad = "";
+                            hr = cad = time = "";
 #if false
                             foreach (XElement elem in from item in tpt.Descendants()
                                                       select item) {
                                 writeInfo("name=" + elem.Name);
                             }
 #endif
-                            foreach (XElement element in tpt.Elements().
-                                Where(p => p.Name.LocalName == "LatitudeDegrees")) {
-                                lat = Double.Parse(element.Value);
-                            }
-                            foreach (XElement element in tpt.Elements().
-                                Where(p => p.Name.LocalName == "LongitudeDegrees")) {
-                                lon = Double.Parse(element.Value);
-                            }
-                            foreach (XElement element in tpt.Elements().
-                               Where(p => p.Name.LocalName == "AltitudeMeters")) {
-                                ele = Double.Parse(element.Value);
-                            }
-                            foreach (XElement element in tpt.Descendants().
-                                Where(p => p.Name.LocalName == "Value" &&
-                                p.Parent.Name.LocalName == "HeartRateBpm")) {
-                                hr = element.Value;
-                            }
-                            foreach (XElement element in tpt.Elements().
-                               Where(p => p.Name.LocalName == "Cadence")) {
-                                cad = element.Value;
+                            foreach (XElement elem in tpt.Descendants()) {
+                                if (elem.Name.LocalName == "LatitudeDegrees") {
+                                    lat = Double.Parse(elem.Value);
+                                } else if (elem.Name.LocalName == "LongitudeDegrees") {
+                                    lon = Double.Parse(elem.Value);
+                                } else if (elem.Name.LocalName == "AltitudeMeters") {
+                                    ele = Double.Parse(elem.Value);
+                                } else if (elem.Name.LocalName == "Time") {
+                                    time = elem.Value;
+                                } else if (elem.Name.LocalName == "Cadence") {
+                                    cad = elem.Value;
+                                } else if (elem.Name.LocalName == "Value" &&
+                                    elem.Parent.Name.LocalName == "HeartRateBpm") {
+                                    hr = elem.Value;
+                                }
                             }
                             writeInfo(
-                            String.Format("{0:d4} lat={1:f6} lon={2:f6} ele={3:f6} hr={4} cad={5}",
-                                nTpts++, lat, lon, ele, hr, cad));
+                            String.Format("{0:d4} lat={1:f6} lon={2:f6} ele={3:f6} time={4}",
+                                nTpts++, lat, lon, ele, time));
+                            writeInfo(
+                            String.Format("  hr={0} cad={1}",
+                                hr, cad));
                         }
+                    }
+                }
+            }
+        }
+
+        private void testGpx2(string fileName) {
+            writeInfo("Test GPX with XmlDocument");
+            writeInfo(fileName);
+
+            XDocument doc = XDocument.Load(fileName);
+            XElement gpx = doc.Root;
+#if false
+            writeInfo("nElements=" + gpx.Elements().Count());
+            foreach (XElement elem in from item in gpx.Elements()
+                                      select item) {
+                writeInfo("Name=" + elem.Name);
+            }
+#endif
+            // Note that it is better to use Element in foreach enquiries
+            // Except use Descendents when the Parent is needed
+            foreach (XAttribute attr in gpx.Attributes()) {
+                if (attr.Name == "creator") {
+                    writeInfo("Creator: " + attr.Value);
+                } else if (attr.Name == "version") {
+                    writeInfo("Version: " + attr.Value);
+                }
+            }
+            foreach (XElement elem in gpx.Elements().
+                Where(p => p.Name.LocalName == "metadata")) {
+                foreach (XElement elem1 in elem.Elements()) {
+                    if (elem1.Name.LocalName == "link") {
+                        writeInfo("Link: " + elem1.Value);
+                    } else if (elem1.Name.LocalName == "author") {
+                        foreach (XElement elem2 in elem1.Elements()) {
+                            if (elem2.Name.LocalName == "name") { }
+                            writeInfo("Author: " + elem2.Value);
+                        }
+                    } else if (elem1.Name.LocalName == "bounds") {
+                        string bounds = "";
+                        foreach (XAttribute attr in elem1.Attributes()) {
+                            bounds += attr.Name + "=" + attr.Value + " ";
+                        }
+                        if (!string.IsNullOrEmpty(bounds)) {
+                            writeInfo("Bounds: " + bounds);
+                        }
+                    } else if (elem1.Name.LocalName == "category") {
+                        writeInfo("Category: " + elem1.Value);
+                    } else if (elem1.Name.LocalName == "location") {
+                        writeInfo("Location: " + elem1.Value);
+                    } else if (elem1.Name.LocalName == "time") {
+                        writeInfo("Time: " + elem1.Value);
+                    }
+                }
+            }
+            IEnumerable<XElement> trks =
+                from item in gpx.Elements()
+                where item.Name.LocalName == "trk"
+                select item;
+            writeInfo("nTracks=" + trks.Count());
+
+            // Loop over Tracks, Segments, and Trackpoints
+            int nTrks = 0, nSegs, nTpts;
+            double lat, lon, ele, speed, distance;
+            string hr, cad, time, sat;
+            foreach (XElement trk in trks) {
+                writeInfo("Track " + nTrks++);
+                foreach (XElement elem in trk.Elements().
+                    Where(p => p.Name.LocalName == "Name")) {
+                    writeInfo("Name: " + elem.Value);
+                }
+                foreach (XElement elem in trk.Elements().
+                    Where(p => p.Name.LocalName == "Notes")) {
+                    writeInfo("Notes: " + elem.Value);
+                }
+                nSegs = 0;
+                IEnumerable<XElement> segs =
+                    from item in trk.Elements()
+                    where item.Name.LocalName == "trkseg"
+                    select item;
+                foreach (XElement seg in segs) {
+                    writeInfo("Seg " + nSegs++);
+                    nTpts = 0;
+                    IEnumerable<XElement> tpts =
+                       from item in seg.Elements()
+                       where item.Name.LocalName == "trkpt"
+                       select item;
+                    writeInfo("nTrackpoints=" + tpts.Count());
+                    foreach (XElement tpt in tpts) {
+                        lat = lon = ele = speed = distance = 0;
+                        hr = cad = time = sat = "";
+#if false
+                        writeInfo("nElements=" + tpt.Elements().Count());
+                        foreach (XElement elem in from item in tpt.Elements()
+                                                  select item) {
+                            writeInfo("Name=" + elem.Name);
+                        }
+#endif
+                        foreach (XAttribute attr in tpt.Attributes()) {
+                            if (attr.Name == "lat") {
+                                lat = Double.Parse(attr.Value);
+                            } else if (attr.Name == "lon") {
+                                lon = Double.Parse(attr.Value);
+                            }
+                        }
+                        foreach (XElement elem in from item in tpt.Elements()
+                                                  select item) {
+                            if (elem.Name.LocalName == "ele") {
+                                ele = Double.Parse(elem.Value);
+                            } else if (elem.Name.LocalName == "time") {
+                                time = elem.Value;
+                            } else if (elem.Name.LocalName == "sat") {
+                                sat = elem.Value;
+                            }
+                        }
+                        foreach (XElement elem in from item in tpt.Descendants()
+                                                  select item) {
+                            if (elem.Name == "hr") {
+                                hr = elem.Value;
+                            } else if (elem.Name.LocalName == "cad") {
+                                cad = elem.Value;
+                            } else if (elem.Name.LocalName == "distance") {
+                                distance = Double.Parse(elem.Value);
+                            } else if (elem.Name.LocalName == "speed") {
+                                speed = Double.Parse(elem.Value);
+                            }
+                        }
+                        writeInfo(
+                          String.Format("{0:d4} lat={1:f6} lon={2:f6} " +
+                          "ele={3:f6} time={4}",
+                              nTpts++, lat, lon, ele, time));
+                        writeInfo(
+                          String.Format("  hr={0} cad={1} dist={2:f6} speed={3:f6} sat={4}",
+                              hr, cad, distance, speed, sat));
                     }
                 }
             }

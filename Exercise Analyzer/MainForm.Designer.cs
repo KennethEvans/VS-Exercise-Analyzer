@@ -27,8 +27,6 @@
             this.textBoxInfo = new System.Windows.Forms.TextBox();
             this.flowLayoutPanelButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.buttonProcess1 = new System.Windows.Forms.Button();
-            this.buttonProcess2 = new System.Windows.Forms.Button();
-            this.buttonCompare = new System.Windows.Forms.Button();
             this.buttonQuit = new System.Windows.Forms.Button();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -81,13 +79,11 @@
             this.flowLayoutPanelButtons.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.flowLayoutPanelButtons.BackColor = System.Drawing.SystemColors.Control;
             this.flowLayoutPanelButtons.Controls.Add(this.buttonProcess1);
-            this.flowLayoutPanelButtons.Controls.Add(this.buttonProcess2);
-            this.flowLayoutPanelButtons.Controls.Add(this.buttonCompare);
             this.flowLayoutPanelButtons.Controls.Add(this.buttonQuit);
-            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(400, 839);
+            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(537, 839);
             this.flowLayoutPanelButtons.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
-            this.flowLayoutPanelButtons.Size = new System.Drawing.Size(457, 46);
+            this.flowLayoutPanelButtons.Size = new System.Drawing.Size(183, 46);
             this.flowLayoutPanelButtons.TabIndex = 0;
             this.flowLayoutPanelButtons.WrapContents = false;
             // 
@@ -105,38 +101,12 @@
             this.buttonProcess1.UseVisualStyleBackColor = true;
             this.buttonProcess1.Click += new System.EventHandler(this.button_clear_click);
             // 
-            // buttonProcess2
-            // 
-            this.buttonProcess2.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.buttonProcess2.AutoSize = true;
-            this.buttonProcess2.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.buttonProcess2.Location = new System.Drawing.Point(102, 2);
-            this.buttonProcess2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.buttonProcess2.Name = "buttonProcess2";
-            this.buttonProcess2.Size = new System.Drawing.Size(131, 42);
-            this.buttonProcess2.TabIndex = 1;
-            this.buttonProcess2.Text = "Button 2";
-            this.buttonProcess2.UseVisualStyleBackColor = true;
-            // 
-            // buttonCompare
-            // 
-            this.buttonCompare.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.buttonCompare.AutoSize = true;
-            this.buttonCompare.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.buttonCompare.Location = new System.Drawing.Point(239, 2);
-            this.buttonCompare.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.buttonCompare.Name = "buttonCompare";
-            this.buttonCompare.Size = new System.Drawing.Size(131, 42);
-            this.buttonCompare.TabIndex = 2;
-            this.buttonCompare.Text = "Button 3";
-            this.buttonCompare.UseVisualStyleBackColor = true;
-            // 
             // buttonQuit
             // 
             this.buttonQuit.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.buttonQuit.AutoSize = true;
             this.buttonQuit.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.buttonQuit.Location = new System.Drawing.Point(376, 2);
+            this.buttonQuit.Location = new System.Drawing.Point(102, 2);
             this.buttonQuit.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.buttonQuit.Name = "buttonQuit";
             this.buttonQuit.Size = new System.Drawing.Size(78, 42);
@@ -228,8 +198,6 @@
         private System.Windows.Forms.TextBox textBoxInfo;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelButtons;
         private System.Windows.Forms.Button buttonProcess1;
-        private System.Windows.Forms.Button buttonProcess2;
-        private System.Windows.Forms.Button buttonCompare;
         private System.Windows.Forms.Button buttonQuit;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;

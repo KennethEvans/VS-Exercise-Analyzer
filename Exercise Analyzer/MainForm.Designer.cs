@@ -23,6 +23,7 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.tableLayoutPanelTop = new System.Windows.Forms.TableLayoutPanel();
             this.textBoxInfo = new System.Windows.Forms.TextBox();
             this.flowLayoutPanelButtons = new System.Windows.Forms.FlowLayoutPanel();
@@ -30,7 +31,8 @@
             this.buttonQuit = new System.Windows.Forms.Button();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.openGPXTCXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.processFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.processSingleFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -130,29 +132,37 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.openGPXTCXToolStripMenuItem,
+            this.processFilesToolStripMenuItem,
+            this.processSingleFileToolStripMenuItem,
             this.toolStripSeparator1,
             this.quitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(75, 45);
             this.fileToolStripMenuItem.Text = "File";
             // 
-            // openGPXTCXToolStripMenuItem
+            // processFilesToolStripMenuItem
             // 
-            this.openGPXTCXToolStripMenuItem.Name = "openGPXTCXToolStripMenuItem";
-            this.openGPXTCXToolStripMenuItem.Size = new System.Drawing.Size(357, 46);
-            this.openGPXTCXToolStripMenuItem.Text = "Open GPX, TCX...";
-            this.openGPXTCXToolStripMenuItem.Click += new System.EventHandler(this.file_OpenInput_click);
+            this.processFilesToolStripMenuItem.Name = "processFilesToolStripMenuItem";
+            this.processFilesToolStripMenuItem.Size = new System.Drawing.Size(396, 46);
+            this.processFilesToolStripMenuItem.Text = "Process Files...";
+            this.processFilesToolStripMenuItem.Click += new System.EventHandler(this.file_ProcessFiles_click);
+            // 
+            // processSingleFileToolStripMenuItem
+            // 
+            this.processSingleFileToolStripMenuItem.Name = "processSingleFileToolStripMenuItem";
+            this.processSingleFileToolStripMenuItem.Size = new System.Drawing.Size(396, 46);
+            this.processSingleFileToolStripMenuItem.Text = "Process Single File...";
+            this.processSingleFileToolStripMenuItem.Click += new System.EventHandler(this.file_ProcessSingleFile_click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(354, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(393, 6);
             // 
             // quitToolStripMenuItem
             // 
             this.quitToolStripMenuItem.Name = "quitToolStripMenuItem";
-            this.quitToolStripMenuItem.Size = new System.Drawing.Size(357, 46);
+            this.quitToolStripMenuItem.Size = new System.Drawing.Size(396, 46);
             this.quitToolStripMenuItem.Text = "Quit";
             this.quitToolStripMenuItem.Click += new System.EventHandler(this.file_Exit_click);
             // 
@@ -178,6 +188,7 @@
             this.ClientSize = new System.Drawing.Size(1258, 936);
             this.Controls.Add(this.tableLayoutPanelTop);
             this.Controls.Add(this.menuStrip1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "MainForm";
             this.Text = "Exercise Analyzer";
@@ -204,8 +215,9 @@
         private System.Windows.Forms.ToolStripMenuItem quitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem openGPXTCXToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem processSingleFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem processFilesToolStripMenuItem;
     }
 }
 

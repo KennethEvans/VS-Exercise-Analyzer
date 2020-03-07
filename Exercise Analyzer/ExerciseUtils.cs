@@ -36,7 +36,7 @@ namespace Exercise_Analyzer {
         }
 
         private void testGpx(string fileName) {
-            writeInfo("Test GPX");
+            writeInfo(NL + "Test GPX");
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(gpxType),
                 NS_GPX_1_1);
 
@@ -90,7 +90,7 @@ namespace Exercise_Analyzer {
         }
 
         private void testTcx(string fileName) {
-            writeInfo("Test TCX");
+            writeInfo(NL + "Test TCX");
             writeInfo(fileName);
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(TrainingCenterDatabase_t),
                 NS_GPX_TrainingCenterDatabase_v2);
@@ -153,7 +153,7 @@ namespace Exercise_Analyzer {
         }
 
         private void testTcx2(string fileName) {
-            writeInfo("Test TCX with XmlDocument");
+            writeInfo(NL + "Test TCX with XmlDocument");
             writeInfo(fileName);
 
             XDocument doc = XDocument.Load(fileName);
@@ -192,7 +192,8 @@ namespace Exercise_Analyzer {
             // Loop over Activities, Laps, Tracks, and Trackpoints
             int nActivity = 0, nLaps, nTrks, nTpts;
             double lat, lon, ele;
-            string hr, cad, time;
+            int hr, cad;
+            DateTime time;
             foreach (XElement activity in activities) {
                 writeInfo("Activity " + nActivity++);
                 foreach (XElement elem in activity.Descendants().
@@ -248,7 +249,8 @@ namespace Exercise_Analyzer {
                            select item;
                         foreach (XElement tpt in tpts) {
                             lat = lon = ele = 0;
-                            hr = cad = time = "";
+                            hr = cad = 0;
+                            time = DateTime.MinValue;
 #if false
                             foreach (XElement elem in from item in tpt.Descendants()
                                                       select item) {
@@ -257,18 +259,18 @@ namespace Exercise_Analyzer {
 #endif
                             foreach (XElement elem in tpt.Descendants()) {
                                 if (elem.Name.LocalName == "LatitudeDegrees") {
-                                    lat = Double.Parse(elem.Value);
+                                    lat = (double)elem;
                                 } else if (elem.Name.LocalName == "LongitudeDegrees") {
-                                    lon = Double.Parse(elem.Value);
+                                    lon = (double)elem;
                                 } else if (elem.Name.LocalName == "AltitudeMeters") {
-                                    ele = Double.Parse(elem.Value);
+                                    ele = (double)elem;
                                 } else if (elem.Name.LocalName == "Time") {
-                                    time = elem.Value;
+                                    time = (DateTime)elem;
                                 } else if (elem.Name.LocalName == "Cadence") {
-                                    cad = elem.Value;
+                                    cad = (int)elem;
                                 } else if (elem.Name.LocalName == "Value" &&
                                     elem.Parent.Name.LocalName == "HeartRateBpm") {
-                                    hr = elem.Value;
+                                    hr = (int)elem;
                                 }
                             }
                             writeInfo(
@@ -284,7 +286,7 @@ namespace Exercise_Analyzer {
         }
 
         private void testGpx2(string fileName) {
-            writeInfo("Test GPX with XmlDocument");
+            writeInfo(NL + "Test GPX with XmlDocument");
             writeInfo(fileName);
 
             XDocument doc = XDocument.Load(fileName);
@@ -341,7 +343,8 @@ namespace Exercise_Analyzer {
             // Loop over Tracks, Segments, and Trackpoints
             int nTrks = 0, nSegs, nTpts;
             double lat, lon, ele, speed, distance;
-            string hr, cad, time, sat;
+            int hr, cad, sat;
+            DateTime time;
             foreach (XElement trk in trks) {
                 writeInfo("Track " + nTrks++);
                 foreach (XElement elem in trk.Elements().
@@ -367,7 +370,8 @@ namespace Exercise_Analyzer {
                     writeInfo("nTrackpoints=" + tpts.Count());
                     foreach (XElement tpt in tpts) {
                         lat = lon = ele = speed = distance = 0;
-                        hr = cad = time = sat = "";
+                        hr = cad = sat =0;
+                        time = DateTime.MinValue;
 #if false
                         writeInfo("nElements=" + tpt.Elements().Count());
                         foreach (XElement elem in from item in tpt.Elements()
@@ -377,31 +381,31 @@ namespace Exercise_Analyzer {
 #endif
                         foreach (XAttribute attr in tpt.Attributes()) {
                             if (attr.Name == "lat") {
-                                lat = Double.Parse(attr.Value);
+                                lat = (double)attr;
                             } else if (attr.Name == "lon") {
-                                lon = Double.Parse(attr.Value);
+                                lon = (double)attr;
                             }
                         }
                         foreach (XElement elem in from item in tpt.Elements()
                                                   select item) {
                             if (elem.Name.LocalName == "ele") {
-                                ele = Double.Parse(elem.Value);
+                                ele = (double)elem;
                             } else if (elem.Name.LocalName == "time") {
-                                time = elem.Value;
+                                time = (DateTime)elem;
                             } else if (elem.Name.LocalName == "sat") {
-                                sat = elem.Value;
+                                sat = (int)elem;
                             }
                         }
                         foreach (XElement elem in from item in tpt.Descendants()
                                                   select item) {
                             if (elem.Name == "hr") {
-                                hr = elem.Value;
+                                hr = (int)elem;
                             } else if (elem.Name.LocalName == "cad") {
-                                cad = elem.Value;
+                                cad = (int)elem;
                             } else if (elem.Name.LocalName == "distance") {
-                                distance = Double.Parse(elem.Value);
+                                distance = (double)elem;
                             } else if (elem.Name.LocalName == "speed") {
-                                speed = Double.Parse(elem.Value);
+                                speed = (double)elem;
                             }
                         }
                         writeInfo(

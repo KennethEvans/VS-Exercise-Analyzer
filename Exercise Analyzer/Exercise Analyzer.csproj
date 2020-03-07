@@ -55,6 +55,9 @@
   <PropertyGroup>
     <ApplicationManifest>App.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>ExerciseAnalyzer.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -73,9 +76,11 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="AboutBox.Designer.cs" />
+    <Compile Include="Data.cs" />
     <Compile Include="ExerciseUtils.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GpsUtils.cs" />
     <Compile Include="gpx.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
@@ -89,7 +94,9 @@
     <Compile Include="TrackPointExtensionv2.cs" />
     <Compile Include="TrainingCenterDatabasev2.cs" />
     <Compile Include="Utils.cs" />
-    <EmbeddedResource Include="AboutBox.resx" />
+    <EmbeddedResource Include="AboutBox.resx">
+      <DependentUpon>AboutBox.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -118,6 +125,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ExerciseAnalyzer.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

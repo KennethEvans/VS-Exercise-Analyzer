@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using Newtonsoft.Json;
 
 namespace Exercise_Analyzer {
     public class ExerciseData {
@@ -392,6 +393,7 @@ namespace Exercise_Analyzer {
             }
         }
 
+        [JsonIgnore]
         public string Source
         {
             get
@@ -414,6 +416,7 @@ namespace Exercise_Analyzer {
             }
         }
 
+        [JsonIgnore]
         public DateTime StartTimeRounded
         {
             get
@@ -428,6 +431,7 @@ namespace Exercise_Analyzer {
             }
         }
 
+        [JsonIgnore]
         public string Extension
         {
             get
@@ -437,6 +441,7 @@ namespace Exercise_Analyzer {
             }
         }
 
+        [JsonIgnore]
         public string SimpleFileName
         {
             get
@@ -446,6 +451,7 @@ namespace Exercise_Analyzer {
             }
         }
 
+        [JsonIgnore]
         public string FileNameWithoutExtension
         {
             get
@@ -455,6 +461,7 @@ namespace Exercise_Analyzer {
             }
         }
 
+        [JsonIgnore]
         public bool IsTcx
         {
             get
@@ -463,6 +470,7 @@ namespace Exercise_Analyzer {
             }
         }
 
+        [JsonIgnore]
         public bool IsGpx
         {
             get

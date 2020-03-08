@@ -8,6 +8,7 @@ using System.Linq;
 using System.Windows.Forms;
 using About;
 using KEUtils;
+using Newtonsoft.Json;
 
 namespace Exercise_Analyzer {
     public partial class MainForm : Form {
@@ -296,6 +297,43 @@ namespace Exercise_Analyzer {
                     }
                 }
                 Utils.infoMsg("Check State: " + NL + info);
+            }
+        }
+
+        private void data_Export_click(object sender, EventArgs e) {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Filter = "Json Files|*.json";
+            dlg.Title = "Select a data file for Export";
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                try {
+                    string json = JsonConvert.SerializeObject(exerciseDataList, Formatting.Indented);
+                    File.WriteAllText(dlg.FileName, json);
+                } catch (Exception ex) {
+                    Utils.excMsg("Error exporting file " + dlg.FileName, ex);
+                    return;
+                }
+            }
+        }
+
+        private void data_Import_click(object sender, EventArgs e) {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "Json Files|*.json";
+            dlg.Title = "Select a data file to import";
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                try {
+                    string json = File.ReadAllText(dlg.FileName);
+                    List<ExerciseData> dataList =
+                        JsonConvert.DeserializeObject<List<ExerciseData>>(json);
+                    if (dataList != null) {
+                        exerciseDataList.AddRange(dataList);
+                    } else {
+                        Utils.errMsg("Failed to convert " + dlg.FileName);
+                        return;
+                    }
+                } catch (Exception ex) {
+                    Utils.excMsg("Error importing file " + dlg.FileName, ex);
+                    return;
+                }
             }
         }
     }

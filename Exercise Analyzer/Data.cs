@@ -40,6 +40,40 @@ namespace Exercise_Analyzer {
         public int HrMax { get; set; } = Int32.MinValue;
         public int HrMin { get; set; } = Int32.MaxValue;
 
+        public Index[] makeIndex() {
+            Index[] objects = new Index[29];
+            objects[0] = new Index("NTracks", NTracks, 0);
+            objects[1] = new Index("NSegments", NSegments, 0);
+            objects[2] = new Index("NTrackPoints", NTrackPoints, 0);
+            objects[3] = new Index("NHrValues", NHrValues, 0);
+            objects[4] = new Index("StartTime", StartTime, DateTime.MinValue);
+            objects[5] = new Index("EndTime", EndTime, DateTime.MinValue);
+            objects[6] = new Index("HrStartTime", HrStartTime, DateTime.MinValue);
+            objects[7] = new Index("HrEndTime", HrEndTime, DateTime.MinValue);
+            objects[8] = new Index("Distance", Distance, 0);
+            objects[9] = new Index("Duration", Duration, null);
+            objects[10] = new Index("Creator", Creator, null);
+            objects[11] = new Index("Category", Category, null);
+            objects[12] = new Index("Location", Location, null);
+            objects[13] = new Index("LatStart", LatStart, Double.NaN);
+            objects[14] = new Index("LatMax", LatMax, -Double.MaxValue);
+            objects[15] = new Index("LatMin", LatMin, Double.MaxValue);
+            objects[16] = new Index("LonStart", LonStart, Double.NaN);
+            objects[17] = new Index("LonMax", LonMax, -Double.MaxValue);
+            objects[18] = new Index("LonMin", LonMin, Double.MaxValue);
+            objects[19] = new Index("EleStart", EleStart, Double.NaN);
+            objects[20] = new Index("EleMax", EleMax, -Double.MaxValue);
+            objects[21] = new Index("EleMin", EleMin, Double.MaxValue);
+            objects[22] = new Index("SpeedAvg", SpeedAvg, 0);
+            objects[23] = new Index("SpeedAvgSimple", SpeedAvgSimple, 0);
+            objects[24] = new Index("SpeedMax", SpeedMax, 0);
+            objects[25] = new Index("SpeedMin", SpeedMin, 0);
+            objects[26] = new Index("HrAvg", HrAvg, 0);
+            objects[27] = new Index("HrMax", HrMax, Int32.MinValue);
+            objects[28] = new Index("HrMin", HrMin, Int32.MaxValue);
+            return objects;
+        }
+
         public static ExerciseData processTcx(string fileName) {
             ExerciseData data = new ExerciseData();
             data.FileName = fileName;
@@ -55,7 +89,7 @@ namespace Exercise_Analyzer {
 
             // Loop over Activities, Laps, Tracks, and Trackpoints
             int nAct = 0, nLaps = 0, nTrks = 0, nTpts = 0, nHr = 0;
-            double lat, lon, ele, distance = 0, hrSum = 0, hrMax = 0;
+            double lat, lon, ele, distance = 0, hrSum = 0;
             double latPrev = Double.NaN, lonPrev = Double.NaN;
             DateTime time;
             int hr;
@@ -207,7 +241,7 @@ namespace Exercise_Analyzer {
 
             // Loop over Activities, Laps, Tracks, and Trackpoints
             int nSegs = 0, nTrks = 0, nTpts = 0, nHr = 0;
-            double lat, lon, ele, distance = 0, hrSum = 0, hrMax = 0;
+            double lat, lon, ele, distance = 0, hrSum = 0;
             double latPrev = Double.NaN, lonPrev = Double.NaN;
             DateTime time;
             int hr;
@@ -241,7 +275,8 @@ namespace Exercise_Analyzer {
                             if (elem.Name.LocalName == "ele") {
                                 ele = (double)elem;
                             } else if (elem.Name.LocalName == "time") {
-                                time = (DateTime)elem;
+                                // Fix for bad times in Polar GPX
+                                time = ((DateTime)elem).ToUniversalTime();
                             }
                         }
                         foreach (XElement elem in from item in tpt.Descendants()
@@ -357,6 +392,85 @@ namespace Exercise_Analyzer {
             }
         }
 
+        public string Source
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(Creator)) {
+                    return "NA";
+                } else if (Creator.ToLower().Contains("polar")) {
+                    return "Polar";
+                } else if (Creator.ToLower().Contains("sportstracklive")) {
+                    return "STL";
+                } else if (Creator.ToLower().Contains("gpx inspector")) {
+                    return "GPX Inspector";
+                } else if (Creator.ToLower().Contains("gpslink")) {
+                    return "GpsLink";
+                } else if (Creator.ToLower().Contains("mapsource")) {
+                    return "MapSource";
+                } else {
+                    return "Other";
+                }
+            }
+        }
+
+        public DateTime StartTimeRounded
+        {
+            get
+            {
+                TimeSpan tolerance =
+                    new TimeSpan(MainForm.START_TIME_THRESHOLD_SECONDS *
+                    TimeSpan.TicksPerSecond);
+                var halfIntervalTicks = (tolerance.Ticks + 1) >> 1;
+
+                return StartTime.AddTicks(halfIntervalTicks -
+                    ((StartTime.Ticks + halfIntervalTicks) % tolerance.Ticks));
+            }
+        }
+
+        public string Extension
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(FileName)) return null;
+                return Path.GetExtension(FileName);
+            }
+        }
+
+        public string SimpleFileName
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(FileName)) return null;
+                return Path.GetFileName(FileName);
+            }
+        }
+
+        public string FileNameWithoutExtension
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(FileName)) return null;
+                return Path.GetFileNameWithoutExtension(FileName);
+            }
+        }
+
+        public bool IsTcx
+        {
+            get
+            {
+                return Path.GetExtension(FileName).ToLower() == ".tcx";
+            }
+        }
+
+        public bool IsGpx
+        {
+            get
+            {
+                return Path.GetExtension(FileName).ToLower() == ".gpx";
+            }
+        }
+
         public string info() {
             if (String.IsNullOrEmpty(FileName)) {
                 return "No fileName defined";
@@ -394,13 +508,33 @@ namespace Exercise_Analyzer {
 
             return info;
         }
+    }
 
-        public class SaveSet {
-            public List<ExerciseData> ExerciseData { get; set; }
+    public class Index {
+        public Object Value { get; set; }
+        public Object Default { get; set; }
+        public string Name { get; set; }
 
-            public SaveSet(List<ExerciseData> exerciseData) {
-                ExerciseData = exerciseData;
-            }
+        public Index(string name, Object val, Object defaultVal) {
+            Name = name;
+            Value = val;
+            Default = defaultVal;
+        }
+
+        public bool isDefault() {
+            return Value == Default;
+        }
+
+        public bool equals(Index index1) {
+            return Value == index1.Value;
+        }
+    }
+
+    public class SaveSet {
+        public List<ExerciseData> ExerciseData { get; set; }
+
+        public SaveSet(List<ExerciseData> exerciseData) {
+            ExerciseData = exerciseData;
         }
     }
 }

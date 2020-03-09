@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -13,7 +14,7 @@ using Newtonsoft.Json;
 namespace Exercise_Analyzer {
     public partial class MainForm : Form {
         public static readonly String NL = Environment.NewLine;
-        public const int START_TIME_THRESHOLD_SECONDS = 300;
+        public const string CSV_SEP = ",";
         private string inputFile;
         private List<ExerciseData> exerciseDataList;
         private const bool processSilent = false;
@@ -148,7 +149,6 @@ namespace Exercise_Analyzer {
                 if (dialogRes == System.Windows.Forms.DialogResult.Abort) break;
                 if (dialogRes == System.Windows.Forms.DialogResult.Cancel) continue;
                 List<Result> results = dlg.Results;
-                string info = "";
                 foreach (Result result in results) {
                     if (!result.Checked) {
                         ExerciseData data =
@@ -214,6 +214,63 @@ namespace Exercise_Analyzer {
                 foreach (ExerciseData data in exerciseDataList) {
                     writeInfo("      " + data.StartTime + " \t" + Path.GetFileName(data.FileName));
                 }
+            }
+        }
+
+        public void createCsv(string fileName) {
+            if (exerciseDataList == null) return;
+            string[] csvColumnNames = new string[] { "id", "category",
+                "event", "location", "tags", "year", "month", "week of year",
+                "start", "finish", "distance", "duration", "duration(s)",
+                "calories", "ave speed", "ave pace", "ave pace(s)",
+                "ave moving speed", "ave moving pace", "ave moving pace(s)", "max speed",
+                "ave heart rate", "elevation gain", "elevation loss", "max elevation"};
+
+            // From https://docs.microsoft.com/en-us/dotnet/api/system.globalization.calendar.getweekofyear?view=netframework-4.8
+            CultureInfo ci = new CultureInfo("en-US");
+            Calendar cal = ci.Calendar;
+            CalendarWeekRule cwr = ci.DateTimeFormat.CalendarWeekRule;
+            DayOfWeek dow = ci.DateTimeFormat.FirstDayOfWeek;
+
+            try {
+                using (StreamWriter sw = new StreamWriter(fileName)) {
+                    foreach (string col in csvColumnNames) {
+                        sw.Write(col + CSV_SEP);
+                    }
+                    sw.Write(NL);
+                    foreach (ExerciseData data in exerciseDataList) {
+                        sw.Write(CSV_SEP);  // id
+                        sw.Write(data.Category + CSV_SEP); // category
+                        sw.Write(CSV_SEP);  //event
+                        sw.Write(data.Location + CSV_SEP);  // location
+                        sw.Write(CSV_SEP);  // tags
+                        sw.Write(data.StartTime.Year + CSV_SEP);  // year
+                        // STL uses 0-based month number
+                        sw.Write(ExerciseData.formatMonthStl(data.StartTime) + CSV_SEP); // month
+                        sw.Write(cal.GetWeekOfYear(data.StartTime, cwr, dow) + CSV_SEP);  // week of year
+                        sw.Write(ExerciseData.formatTimeStl(data.StartTime) + CSV_SEP);  // start
+                        sw.Write(ExerciseData.formatTimeStl(data.EndTime) + CSV_SEP);  // end
+                        sw.Write($"{GpsUtils.M2MI * data.Distance:f2}" + CSV_SEP);  // distance
+                        sw.Write(ExerciseData.formatDuration(data.Duration) + CSV_SEP);  // duration
+                        sw.Write(data.Duration.TotalSeconds + CSV_SEP);  // duration(s)
+                        sw.Write(CSV_SEP);  // calories
+                        sw.Write(ExerciseData.formatSpeed(data.SpeedAvg) + CSV_SEP);  // ave speed
+                        sw.Write(ExerciseData.formatPace(data.SpeedAvg) + CSV_SEP);  // ave pace
+                        sw.Write(ExerciseData.formatPaceSec(data.SpeedAvg) + CSV_SEP);  // ave pace (s)
+                        sw.Write(ExerciseData.formatSpeed(data.SpeedAvgMoving) + CSV_SEP);  // ave moving speed
+                        sw.Write(ExerciseData.formatPace(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace
+                        sw.Write(ExerciseData.formatPaceSec(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace(s)
+                        sw.Write(ExerciseData.formatSpeed(data.SpeedMax) + CSV_SEP);  // max speed
+                        sw.Write(ExerciseData.formatHeartRate(data.HrAvg) + CSV_SEP);  // ave heart rate
+                        sw.Write(ExerciseData.formatElevation(data.EleMax - data.EleStart) + CSV_SEP);  // elevation gain
+                        sw.Write(ExerciseData.formatElevation(data.EleStart - data.EleMin) + CSV_SEP);  // elevation loss
+                        sw.Write(ExerciseData.formatElevation(data.EleMax) + CSV_SEP);  // elevation max
+                        sw.Write(NL);
+                    }
+                }
+            } catch (Exception ex) {
+                Utils.excMsg("Error writing CSV file " + fileName, ex);
+                return;
             }
         }
 
@@ -306,7 +363,10 @@ namespace Exercise_Analyzer {
             dlg.Title = "Select a data file for Export";
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 try {
-                    string json = JsonConvert.SerializeObject(exerciseDataList, Formatting.Indented);
+                    string json = JsonConvert.SerializeObject(exerciseDataList,
+                        (((ToolStripMenuItem)sender).Text.Equals("Indented")) ?
+                        Formatting.Indented :
+                        Formatting.None);
                     File.WriteAllText(dlg.FileName, json);
                 } catch (Exception ex) {
                     Utils.excMsg("Error exporting file " + dlg.FileName, ex);
@@ -332,6 +392,20 @@ namespace Exercise_Analyzer {
                     }
                 } catch (Exception ex) {
                     Utils.excMsg("Error importing file " + dlg.FileName, ex);
+                    return;
+                }
+            }
+        }
+
+        private void file_SaveCsv_click(object sender, EventArgs e) {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Filter = "CSV Files|*.csv";
+            dlg.Title = "Select a CSV file for Export";
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                try {
+                    createCsv(dlg.FileName);
+                } catch (Exception ex) {
+                    Utils.excMsg("Error saving CSV file " + dlg.FileName, ex);
                     return;
                 }
             }

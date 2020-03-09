@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define convertTimeToUTC
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,6 +10,7 @@ using Newtonsoft.Json;
 namespace Exercise_Analyzer {
     public class ExerciseData {
         public static readonly String NL = Environment.NewLine;
+        public const int START_TIME_THRESHOLD_SECONDS = 300;
 
         public string FileName { get; set; }
         public List<string> AssociatedFiles { get; set; } = new List<string>();
@@ -19,7 +22,7 @@ namespace Exercise_Analyzer {
         public DateTime EndTime { get; set; } = DateTime.MinValue;
         public DateTime HrStartTime { get; set; } = DateTime.MinValue;
         public DateTime HrEndTime { get; set; } = DateTime.MinValue;
-        public double Distance { get; set; }
+        public double Distance { get; set; }  // m
         public TimeSpan Duration { get; set; }
         public string Creator { get; set; }
         public string Category { get; set; }
@@ -30,13 +33,14 @@ namespace Exercise_Analyzer {
         public double LonStart { get; set; } = Double.NaN;
         public double LonMax { get; set; } = -Double.MaxValue;
         public double LonMin { get; set; } = Double.MaxValue;
-        public double EleStart { get; set; } = Double.NaN;
-        public double EleMax { get; set; } = -Double.MaxValue;
-        public double EleMin { get; set; } = Double.MaxValue;
-        public double SpeedAvg { get; set; }
-        public double SpeedAvgSimple { get; set; }
-        public double SpeedMax { get; set; }
-        public double SpeedMin { get; set; }
+        public double EleStart { get; set; } = Double.NaN; // m
+        public double EleMax { get; set; } = -Double.MaxValue;  // m
+        public double EleMin { get; set; } = Double.MaxValue;  // m
+        public double SpeedAvg { get; set; } // m/s
+        public double SpeedAvgSimple { get; set; } // m/s
+        public double SpeedAvgMoving { get; set; } // m/s
+        public double SpeedMax { get; set; } // m/s
+        public double SpeedMin { get; set; } // m/s
         public double HrAvg { get; set; } = 0;
         public int HrMax { get; set; } = Int32.MinValue;
         public int HrMin { get; set; } = Int32.MaxValue;
@@ -276,8 +280,12 @@ namespace Exercise_Analyzer {
                             if (elem.Name.LocalName == "ele") {
                                 ele = (double)elem;
                             } else if (elem.Name.LocalName == "time") {
+#if convertTimeToUTC
                                 // Fix for bad times in Polar GPX
                                 time = ((DateTime)elem).ToUniversalTime();
+#else
+                                time = (DateTime)elem;
+#endif
                             }
                         }
                         foreach (XElement elem in from item in tpt.Descendants()
@@ -422,7 +430,7 @@ namespace Exercise_Analyzer {
             get
             {
                 TimeSpan tolerance =
-                    new TimeSpan(MainForm.START_TIME_THRESHOLD_SECONDS *
+                    new TimeSpan(START_TIME_THRESHOLD_SECONDS *
                     TimeSpan.TicksPerSecond);
                 var halfIntervalTicks = (tolerance.Ticks + 1) >> 1;
 
@@ -503,8 +511,10 @@ namespace Exercise_Analyzer {
                 + " NTrackPoints=" + NTrackPoints + NL;
             string eleFormat = "Elevation: Start={0:f0} Min={1:f0} Max={2:f0} Gain={3:f0} Loss={4:f0} ft";
             info += (!Double.IsNaN(EleStart) ?
-                    String.Format(eleFormat, EleStart, EleMin, EleMax,
-                    EleMax - EleStart, EleStart - EleMin) :
+                    String.Format(eleFormat, GpsUtils.M2MI * EleStart,
+                    GpsUtils.M2FT * EleMin, GpsUtils.M2MI * EleMax,
+                    GpsUtils.M2FT * (EleMax - EleStart),
+                    GpsUtils.M2FT * (EleStart - EleMin)) :
                     "Elevation: No elevation data") + NL;
             string boundsFormat = "Bounds: LatMin={0:f6} LatMax=={1:f6} LonMin={2:f6} LonMax={3:f6}";
             info += (!Double.IsNaN(LatStart) ?
@@ -516,6 +526,63 @@ namespace Exercise_Analyzer {
 
             return info;
         }
+
+        public static string formatDuration(TimeSpan duration) {
+            int days = duration.Days;
+            int hours = duration.Hours;
+            int minutes = duration.Minutes;
+            int seconds = duration.Seconds;
+            string val = "";
+            if (days > 0) val += days + "d ";
+            if (hours > 0) val += hours + "h ";
+            if (minutes > 0) val += minutes + "m ";
+            if (seconds > 0) val += seconds + "s ";
+            return val;
+        }
+
+        public static string formatSpeed(double speed) {
+            if (speed == 0) return "";
+            return $"{GpsUtils.M2MI / GpsUtils.SEC2HR * speed:f2}";
+        }
+
+        public static string formatPaceSec(double speed) {
+            if (speed == 0) return "";
+            double pace = GpsUtils.SEC2HR / GpsUtils.M2MI * 3600 / speed;
+            return $"{pace:f2}";
+        }
+
+        public static string formatPace(double speed) {
+            if (speed == 0) return "";
+            double pace = GpsUtils.SEC2HR / GpsUtils.M2MI * 3600 / speed;
+            TimeSpan span =
+                new TimeSpan((long)(Math.Round(pace * TimeSpan.TicksPerSecond)));
+            return formatDuration(span);
+        }
+
+        public static string formatHeartRate(double hr) {
+            if (hr == 0) return "";
+            return hr.ToString();
+        }
+
+        public static string formatElevation(double elevation) {
+            if (Double.IsNaN(elevation) ||
+                elevation == -Double.MaxValue || elevation == Double.MaxValue) {
+                return "";
+            }
+            return $"{GpsUtils.M2FT * elevation:f2}";
+        }
+
+        public static string formatTimeStl(DateTime time) {
+            if (time == DateTime.MinValue) return "";
+            return time.ToString("yyyy-MM-dd hh:mm:ss");
+        }
+
+        public static string formatMonthStl(DateTime time) {
+            if (time == DateTime.MinValue) return "";
+            return (time.Month - 1).ToString();
+        }
+
+
     }
 
     public class Index {
@@ -535,14 +602,6 @@ namespace Exercise_Analyzer {
 
         public bool equals(Index index1) {
             return Value == index1.Value;
-        }
-    }
-
-    public class SaveSet {
-        public List<ExerciseData> ExerciseData { get; set; }
-
-        public SaveSet(List<ExerciseData> exerciseData) {
-            ExerciseData = exerciseData;
         }
     }
 }

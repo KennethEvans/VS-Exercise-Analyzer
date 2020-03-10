@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using GeoTimeZone;
 using Newtonsoft.Json;
+using TimeZoneConverter;
 
 namespace Exercise_Analyzer {
     public class ExerciseData {
@@ -18,6 +20,8 @@ namespace Exercise_Analyzer {
         public int NSegments { get; set; }
         public int NTrackPoints { get; set; }
         public int NHrValues { get; set; }
+        public TimeZoneInfo TZInfo { get; set; } = null;
+        public bool TZInfoFromLatLon { get; set; } = false;
         public DateTime StartTime { get; set; } = DateTime.MinValue;
         public DateTime EndTime { get; set; } = DateTime.MinValue;
         public DateTime HrStartTime { get; set; } = DateTime.MinValue;
@@ -182,6 +186,20 @@ namespace Exercise_Analyzer {
                                 }
                                 latPrev = lat;
                                 lonPrev = lon;
+                            }
+                            // Convert times to the time zone of the location
+                            if (!Double.IsNaN(data.LatStart) && !Double.IsNaN(data.LonStart) &&
+                                data.StartTime != DateTime.MinValue && data.EndTime != DateTime.MinValue) {
+                                try {
+                                    data.TZInfo = GetTimeZoneInfoForLocation(data.LatStart, data.LonStart);
+                                    data.TZInfoFromLatLon = true;
+                                } catch (Exception) {
+                                    data.TZInfo = TimeZoneInfo.Local;
+                                }
+                                data.StartTime = TimeZoneInfo.ConvertTimeFromUtc(data.StartTime, data.TZInfo);
+                                data.EndTime = TimeZoneInfo.ConvertTimeFromUtc(data.EndTime, data.TZInfo);
+                            } else {
+                                data.TZInfo = TimeZoneInfo.Local;
                             }
                         }
                     }
@@ -355,7 +373,20 @@ namespace Exercise_Analyzer {
                 }
             }
             data.setLocationAndCategoryFromFileName(fileName);
-
+            // Convert times to the time zone of the location
+            if (!Double.IsNaN(data.LatStart) && !Double.IsNaN(data.LonStart) &&
+                data.StartTime != DateTime.MinValue && data.EndTime != DateTime.MinValue) {
+                try {
+                    data.TZInfo = GetTimeZoneInfoForLocation(data.LatStart, data.LonStart);
+                    data.TZInfoFromLatLon = true;
+                } catch (Exception) {
+                    data.TZInfo = TimeZoneInfo.Local;
+                }
+                data.StartTime = TimeZoneInfo.ConvertTimeFromUtc(data.StartTime, data.TZInfo);
+                data.EndTime = TimeZoneInfo.ConvertTimeFromUtc(data.EndTime, data.TZInfo);
+            } else {
+                data.TZInfo = TimeZoneInfo.Local;
+            }
             return data;
         }
 
@@ -487,16 +518,53 @@ namespace Exercise_Analyzer {
             }
         }
 
+#if false
+        /// <summary>
+        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lon"></param>
+        /// <param name="utcDate"></param>
+        /// <returns></returns>
+        public static DateTime GetDateTimeForLocation(double lat, double lon, DateTime utcDate) {
+            TimeZoneInfo tzInfo = GetTimeZoneInfoForLocation(lat, lon);
+            DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
+            return convertedTime;
+        }
+#endif
+
+        /// <summary>
+        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lon"></param>
+        /// <param name="utcDate"></param>
+        /// <returns></returns>
+        public static TimeZoneInfo GetTimeZoneInfoForLocation(double lat, double lon) {
+            string tzIana = TimeZoneLookup.GetTimeZone(lat, lon).Result;
+            string tzMs = TZConvert.IanaToWindows(tzIana);
+            TimeZoneInfo tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tzMs);
+            return tzInfo;
+        }
+
         public string info() {
             if (String.IsNullOrEmpty(FileName)) {
                 return "No fileName defined";
             }
+            if (TZInfo == null) { };
             string info = FileName + NL;
             info += "Creator: " + Creator + NL;
             info += "Category: " + Category + NL;
             info += "Location: " + Location + NL;
             info += "NTracks=" + NTracks + " Nsegments=" + NSegments
                 + " NTrackPoints=" + NTrackPoints + NL;
+            if (TZInfo == null) {
+                info += "TimeZone: " + "Not defined" + NL;
+            } else {
+                info += "TimeZone: " + TZInfo
+                    + " " + (TZInfo.IsDaylightSavingTime(StartTime) ? "DST" : "ST") + NL;
+            }
+            info += "TimeZoneInfoFromLatLon: " + TZInfoFromLatLon + NL;
             info += "Start Time: " + StartTime + " End Time: " + EndTime + NL;
             info += "Duration: " + Duration + NL;
             info += "Distance: " + String.Format("{0:f2} mi", GpsUtils.M2MI * Distance) + NL;
@@ -574,7 +642,7 @@ namespace Exercise_Analyzer {
 
         public static string formatTimeStl(DateTime time) {
             if (time == DateTime.MinValue) return "";
-            return time.ToString("yyyy-MM-dd hh:mm:ss");
+            return time.ToString("yyyy-MM-dd HH:mm:ss");
         }
 
         public static string formatMonthStl(DateTime time) {

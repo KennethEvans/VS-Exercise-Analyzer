@@ -5,10 +5,10 @@ using KEUtils;
 
 namespace Exercise_Analyzer {
 
-    public partial class MultiChoiceDialog : Form {
+    public partial class MultiChoiceCheckDialog : Form {
         public List<Result> Results { get; set; }
 
-        public MultiChoiceDialog(List<string> fileNames) {
+        public MultiChoiceCheckDialog(List<string> fileNames) {
             InitializeComponent();
 
             // Fill in the check boxes

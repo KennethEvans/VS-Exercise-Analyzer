@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using System.Windows.Forms;
 using About;
 using KEUtils;
 using Newtonsoft.Json;
+using ScrolledHTML;
 
 namespace Exercise_Analyzer {
     public partial class MainForm : Form {
@@ -18,6 +20,8 @@ namespace Exercise_Analyzer {
         public const string CSV_SEP = ",";
         private List<ExerciseData> exerciseDataList;
         private const bool processSilent = false;
+        private static ScrolledHTMLDialog overviewDlg;
+
 
         public MainForm() {
             InitializeComponent();
@@ -142,7 +146,7 @@ namespace Exercise_Analyzer {
                 foreach (ExerciseData data in group) {
                     filesList.Add(data.FileName);
                 }
-                MultiChoiceDialog dlg = new MultiChoiceDialog(filesList);
+                MultiChoiceCheckDialog dlg = new MultiChoiceCheckDialog(filesList);
                 dlg.Label = "There are duplicate files for StartTime near "
                     + startTimeRounded + NL + "Select which files to use:";
                 DialogResult dialogRes = dlg.ShowDialog();
@@ -333,7 +337,7 @@ namespace Exercise_Analyzer {
         private void file_MultiChoiceTest_click(object sender, EventArgs e) {
             List<string> fileNames = new List<string>
             { "FileName 1", "FileName 2", "FileName 3", "FileName 4" };
-            MultiChoiceDialog dlg = new MultiChoiceDialog(fileNames);
+            MultiChoiceCheckDialog dlg = new MultiChoiceCheckDialog(fileNames);
             dlg.Label = "Select which files to use:";
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 List<Result> results = dlg.Results;
@@ -404,7 +408,39 @@ namespace Exercise_Analyzer {
         }
 
         private void data_SingleItemInfo_click(object sender, EventArgs e) {
+            if (exerciseDataList == null || exerciseDataList.Count == 0) {
+                KEUtils.Utils.errMsg("There are no available items");
+                return;
+            }
+            List<string> fileList = new List<string>();
+            foreach (ExerciseData data in exerciseDataList) {
+                fileList.Add(data.FileName);
+            }
+            MultiChoiceListDialog dlg = new MultiChoiceListDialog(fileList);
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                List<string> selectedList = dlg.SelectedList;
+                if (selectedList == null || selectedList.Count == 0) {
+                    KEUtils.Utils.errMsg("No items selected");
+                }
+                ExerciseData data;
+                foreach (string item in selectedList) {
+                    data =
+                        exerciseDataList.Find(d => d.FileName.Equals(item));
+                    if (data != null) writeInfo(NL + data.info());
+                }
+            }
+        }
 
+        private void help_Overview_click(object sender, EventArgs e) {
+            // Create, show, or set visible the overview dialog as appropriate
+            if (overviewDlg == null) {
+                MainForm app = (MainForm)FindForm().FindForm();
+                overviewDlg = new ScrolledHTMLDialog(
+                    KEUtils.Utils.getDpiAdjustedSize(app, new Size(800, 600)));
+                overviewDlg.Show();
+            } else {
+                overviewDlg.Visible = true;
+            }
         }
     }
 }

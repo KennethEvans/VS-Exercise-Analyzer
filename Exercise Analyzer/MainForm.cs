@@ -261,9 +261,9 @@ namespace Exercise_Analyzer {
                         sw.Write(ExerciseData.formatPace(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace
                         sw.Write(ExerciseData.formatPaceSec(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace(s)
                         sw.Write(ExerciseData.formatSpeed(data.SpeedMax) + CSV_SEP);  // max speed
-                        sw.Write(ExerciseData.formatHeartRate(data.HrAvg) + CSV_SEP);  // ave heart rate
-                        sw.Write(ExerciseData.formatElevation(data.EleMax - data.EleStart) + CSV_SEP);  // elevation gain
-                        sw.Write(ExerciseData.formatElevation(data.EleStart - data.EleMin) + CSV_SEP);  // elevation loss
+                        sw.Write(ExerciseData.formatHeartRateAvg(data.HrAvg) + CSV_SEP);  // ave heart rate
+                        sw.Write(ExerciseData.formatElevation(data.EleGain) + CSV_SEP);  // elevation gain
+                        sw.Write(ExerciseData.formatElevation(data.EleLoss) + CSV_SEP);  // elevation loss
                         sw.Write(ExerciseData.formatElevation(data.EleMax) + CSV_SEP);  // elevation max
                         sw.Write(NL);
                     }

@@ -8,11 +8,13 @@ using System.Xml.Linq;
 using GeoTimeZone;
 using Newtonsoft.Json;
 using TimeZoneConverter;
+using TimeZoneNames;
 
 namespace Exercise_Analyzer {
     public class ExerciseData {
         public static readonly String NL = Environment.NewLine;
         public const int START_TIME_THRESHOLD_SECONDS = 300;
+        public static readonly double NO_MOVE_SPEED = GpsUtils.NO_MOVE_SPEED;
 
         public string FileName { get; set; }
         public List<string> AssociatedFiles { get; set; } = new List<string>();
@@ -20,7 +22,7 @@ namespace Exercise_Analyzer {
         public int NSegments { get; set; }
         public int NTrackPoints { get; set; }
         public int NHrValues { get; set; }
-        public TimeZoneInfo TZInfo { get; set; } = null;
+        public string TZId { get; set; } = null;
         public bool TZInfoFromLatLon { get; set; } = false;
         public DateTime StartTime { get; set; } = DateTime.MinValue;
         public DateTime EndTime { get; set; } = DateTime.MinValue;
@@ -28,6 +30,7 @@ namespace Exercise_Analyzer {
         public DateTime HrEndTime { get; set; } = DateTime.MinValue;
         public double Distance { get; set; }  // m
         public TimeSpan Duration { get; set; }
+        public TimeSpan HrDuration { get; set; }
         public string Creator { get; set; }
         public string Category { get; set; }
         public string Location { get; set; }
@@ -40,6 +43,9 @@ namespace Exercise_Analyzer {
         public double EleStart { get; set; } = Double.NaN; // m
         public double EleMax { get; set; } = -Double.MaxValue;  // m
         public double EleMin { get; set; } = Double.MaxValue;  // m
+        public double EleLoss { get; set; }  // m
+        public double EleGain { get; set; }  // m
+        public double EleAvg { get; set; }  // m
         public double SpeedAvg { get; set; } // m/s
         public double SpeedAvgSimple { get; set; } // m/s
         public double SpeedAvgMoving { get; set; } // m/s
@@ -97,7 +103,23 @@ namespace Exercise_Analyzer {
                 select item;
 
             // Loop over Activities, Laps, Tracks, and Trackpoints
-            int nAct = 0, nLaps = 0, nTrks = 0, nTpts = 0, nHr = 0;
+            List<long> timeValsList = new List<long>();
+            List<long> speedTimeValsList = new List<long>();
+            List<Double> speedValsList = new List<double>();
+            List<double> eleValsList = new List<double>();
+            List<long> hrTimeValsList = new List<long>();
+            List<double> hrValsList = new List<double>();
+            double prevLat = 0, prevLon = 0;
+            long startTime = long.MaxValue;
+            long endTime = 0;
+            long startHrTime = long.MaxValue;
+            long endHrTime = 0;
+            double deltaLength, speed;
+            double prevTime = -1;
+            double deltaTime;
+            long lastTimeValue = -1;
+
+            int nAct = 0, nLaps = 0, nSegs = 0, nTpts = 0, nHr = 0;
             double lat, lon, ele, distance = 0, hrSum = 0;
             double latPrev = Double.NaN, lonPrev = Double.NaN;
             DateTime time;
@@ -120,7 +142,16 @@ namespace Exercise_Analyzer {
                        where item.Name.LocalName == "Track"
                        select item;
                     foreach (XElement trk in trks) {
-                        nTrks++;
+                        nSegs++;
+                        if (nSegs > 1) {
+                            // Use NaN to make a break between segments
+                            hrValsList.Add(Double.NaN);
+                            hrTimeValsList.Add(lastTimeValue);
+                            speedValsList.Add(Double.NaN);
+                            speedTimeValsList.Add(lastTimeValue);
+                            eleValsList.Add(Double.NaN);
+                            timeValsList.Add(lastTimeValue);
+                        }
                         IEnumerable<XElement> tpts =
                            from item in trk.Elements()
                            where item.Name.LocalName == "Trackpoint"
@@ -139,7 +170,19 @@ namespace Exercise_Analyzer {
                                 } else if (elem.Name.LocalName == "AltitudeMeters") {
                                     ele = (double)elem;
                                 } else if (elem.Name.LocalName == "Time") {
-                                    time = (DateTime)elem;
+#if convertTimeToUTC
+                                    // Fix for bad times in Polar GPX
+                                    time = ((DateTime)elem).ToUniversalTime();
+#else
+                                time = (DateTime)elem;
+#endif
+                                    if (time.Ticks < startTime) {
+                                        startTime = time.Ticks;
+                                    }
+                                    if (time.Ticks > endTime) {
+                                        endTime = time.Ticks;
+                                    }
+                                    timeValsList.Add(time.Ticks);
                                 } else if (elem.Name.LocalName == "Value" &&
                                     elem.Parent.Name.LocalName == "HeartRateBpm") {
                                     hr = (int)elem;
@@ -160,6 +203,24 @@ namespace Exercise_Analyzer {
                                 if (lat < data.LatMin) data.LatMin = lat;
                                 if (lon > data.LonMax) data.LonMax = lon;
                                 if (lon < data.LonMin) data.LonMin = lon;
+                                if (prevTime != -1) {
+                                    // Should be the second track point
+                                    deltaLength = GpsUtils.greatCircleDistance(
+                                        prevLat, prevLon, lat, lon);
+                                    distance += deltaLength;
+                                    deltaTime = time.Ticks - prevTime;
+                                    speed = deltaTime > 0
+                                        ? TimeSpan.TicksPerSecond * deltaLength / deltaTime
+                                        : 0;
+                                    // Convert from m/sec to mi/hr
+                                    speedValsList.Add(speed);
+                                    speedTimeValsList
+                                        .Add(time.Ticks - (long)Math.Round(.5 * deltaTime));
+                                    if (Double.IsNaN(ele)) eleValsList.Add(0.0);
+                                }
+                                prevTime = time.Ticks;
+                                prevLat = lat;
+                                prevLon = lon;
                             }
                             if (!Double.IsNaN(ele)) {
                                 if (Double.IsNaN(data.EleStart)) {
@@ -167,6 +228,7 @@ namespace Exercise_Analyzer {
                                 }
                                 if (ele > data.EleMax) data.EleMax = ele;
                                 if (ele < data.EleMin) data.EleMin = ele;
+                                eleValsList.Add(ele);
                             }
                             if (hr > 0) {
                                 if (time != DateTime.MinValue) {
@@ -174,54 +236,21 @@ namespace Exercise_Analyzer {
                                         data.HrStartTime = time;
                                     }
                                     data.HrEndTime = time;
+                                    hrSum += hr;
+                                    nHr++;
+                                    hrValsList.Add((double)hr);
+                                    hrTimeValsList.Add(time.Ticks);
                                 }
-                                nHr++;
-                                hrSum += hr;
-                                if (hr > data.HrMax) data.HrMax = hr;
-                                if (hr < data.HrMin) data.HrMin = hr;
-                            }
-                            if (!Double.IsNaN(lat) && !Double.IsNaN(lon)) {
-                                if (!Double.IsNaN(latPrev) && !Double.IsNaN(lonPrev)) {
-                                    distance += GpsUtils.greatCircleDistance(latPrev, lonPrev, lat, lon);
-                                }
-                                latPrev = lat;
-                                lonPrev = lon;
-                            }
-                            // Convert times to the time zone of the location
-                            if (!Double.IsNaN(data.LatStart) && !Double.IsNaN(data.LonStart) &&
-                                data.StartTime != DateTime.MinValue && data.EndTime != DateTime.MinValue) {
-                                try {
-                                    data.TZInfo = GetTimeZoneInfoForLocation(data.LatStart, data.LonStart);
-                                    data.TZInfoFromLatLon = true;
-                                } catch (Exception) {
-                                    data.TZInfo = TimeZoneInfo.Local;
-                                }
-                                data.StartTime = TimeZoneInfo.ConvertTimeFromUtc(data.StartTime, data.TZInfo);
-                                data.EndTime = TimeZoneInfo.ConvertTimeFromUtc(data.EndTime, data.TZInfo);
-                            } else {
-                                data.TZInfo = TimeZoneInfo.Local;
                             }
                         }
                     }
                 }
             }
-            data.NTracks = nLaps;
-            data.NSegments = nTrks;
-            data.NTrackPoints = nTpts;
-            data.NHrValues = nHr;
-            if (nHr > 0) {
-                data.HrAvg = hrSum / nHr;
-            }
-            data.Distance = distance;
-            if (data.StartTime != DateTime.MinValue && data.EndTime != DateTime.MinValue) {
-                TimeSpan duration = data.EndTime - data.StartTime;
-                data.Duration = duration;
-                if (duration.TotalMilliseconds > 0) {
-                    data.SpeedAvg = 1000 * distance / duration.TotalMilliseconds;
-                }
-            }
-            data.setLocationAndCategoryFromFileName(fileName);
 
+            // End of loops, process what was obtained
+            data.Distance = distance;
+            data.processValues(timeValsList, speedValsList, speedTimeValsList,
+            eleValsList, hrValsList, hrTimeValsList, nLaps, nSegs, nTpts, nHr);
             return data;
         }
 
@@ -240,7 +269,7 @@ namespace Exercise_Analyzer {
             }
 
 
-            // STL files hve this information
+            // STL files have this information
             foreach (XElement elem in gpx.Elements().
                 Where(p => p.Name.LocalName == "metadata")) {
                 foreach (XElement elem1 in elem.Elements()) {
@@ -263,6 +292,23 @@ namespace Exercise_Analyzer {
                   select item;
 
             // Loop over Activities, Laps, Tracks, and Trackpoints
+            // Loop over Activities, Laps, Tracks, and Trackpoints
+            List<long> timeValsList = new List<long>();
+            List<long> speedTimeValsList = new List<long>();
+            List<Double> speedValsList = new List<double>();
+            List<double> eleValsList = new List<double>();
+            List<long> hrTimeValsList = new List<long>();
+            List<double> hrValsList = new List<double>();
+            double prevLat = 0, prevLon = 0;
+            long startTime = long.MaxValue;
+            long endTime = 0;
+            long startHrTime = long.MaxValue;
+            long endHrTime = 0;
+            double deltaLength, speed;
+            double prevTime = -1;
+            double deltaTime;
+            long lastTimeValue = -1;
+
             int nSegs = 0, nTrks = 0, nTpts = 0, nHr = 0;
             double lat, lon, ele, distance = 0, hrSum = 0;
             double latPrev = Double.NaN, lonPrev = Double.NaN;
@@ -276,6 +322,15 @@ namespace Exercise_Analyzer {
                     select item;
                 foreach (XElement seg in segs) {
                     nSegs++;
+                    if (nSegs > 1) {
+                        // Use NaN to make a break between segments
+                        hrValsList.Add(Double.NaN);
+                        hrTimeValsList.Add(lastTimeValue);
+                        speedValsList.Add(Double.NaN);
+                        speedTimeValsList.Add(lastTimeValue);
+                        eleValsList.Add(Double.NaN);
+                        timeValsList.Add(lastTimeValue);
+                    }
                     IEnumerable<XElement> tpts =
                        from item in seg.Elements()
                        where item.Name.LocalName == "trkpt"
@@ -304,11 +359,18 @@ namespace Exercise_Analyzer {
 #else
                                 time = (DateTime)elem;
 #endif
+                                if (time.Ticks < startTime) {
+                                    startTime = time.Ticks;
+                                }
+                                if (time.Ticks > endTime) {
+                                    endTime = time.Ticks;
+                                }
+                                timeValsList.Add(time.Ticks);
                             }
                         }
                         foreach (XElement elem in from item in tpt.Descendants()
                                                   select item) {
-                            if (elem.Name == "hr") {
+                            if (elem.Name.LocalName == "hr") {
                                 hr = (int)elem;
                             }
                         }
@@ -327,6 +389,24 @@ namespace Exercise_Analyzer {
                             if (lat < data.LatMin) data.LatMin = lat;
                             if (lon > data.LonMax) data.LonMax = lon;
                             if (lon < data.LonMin) data.LonMin = lon;
+                            if (prevTime != -1) {
+                                // Should be the second track point
+                                deltaLength = GpsUtils.greatCircleDistance(
+                                    prevLat, prevLon, lat, lon);
+                                distance += deltaLength;
+                                deltaTime = time.Ticks - prevTime;
+                                speed = deltaTime > 0
+                                    ? TimeSpan.TicksPerSecond * deltaLength / deltaTime
+                                    : 0;
+                                // Convert from m/sec to mi/hr
+                                speedValsList.Add(speed);
+                                speedTimeValsList
+                                    .Add(time.Ticks - (long)Math.Round(.5 * deltaTime));
+                                if (Double.IsNaN(ele)) eleValsList.Add(0.0);
+                            }
+                            prevTime = time.Ticks;
+                            prevLat = lat;
+                            prevLon = lon;
                         }
                         if (!Double.IsNaN(ele)) {
                             if (Double.IsNaN(data.EleStart)) {
@@ -334,6 +414,7 @@ namespace Exercise_Analyzer {
                             }
                             if (ele > data.EleMax) data.EleMax = ele;
                             if (ele < data.EleMin) data.EleMin = ele;
+                            eleValsList.Add(ele);
                         }
                         if (hr > 0) {
                             if (time != DateTime.MinValue) {
@@ -341,53 +422,144 @@ namespace Exercise_Analyzer {
                                     data.HrStartTime = time;
                                 }
                                 data.HrEndTime = time;
+                                hrSum += hr;
+                                nHr++;
+                                hrValsList.Add((double)hr);
+                                hrTimeValsList.Add(time.Ticks);
                             }
-                            nHr++;
-                            hrSum += hr;
-                            if (hr > data.HrMax) data.HrMax = hr;
-                            if (hr < data.HrMin) data.HrMin = hr;
-                        }
-                        if (!Double.IsNaN(lat) && !Double.IsNaN(lon)) {
-                            if (!Double.IsNaN(latPrev) && !Double.IsNaN(lonPrev)) {
-                                distance += GpsUtils.greatCircleDistance(latPrev, lonPrev, lat, lon);
-                            }
-                            latPrev = lat;
-                            lonPrev = lon;
                         }
                     }
                 }
             }
-            data.NTracks = nSegs;
-            data.NSegments = nTrks;
-            data.NTrackPoints = nTpts;
-            data.NHrValues = nHr;
-            if (nHr > 0) {
-                data.HrAvg = hrSum / nHr;
-            }
+
+            // End of loops, process what was obtained
             data.Distance = distance;
-            if (data.StartTime != DateTime.MinValue && data.EndTime != DateTime.MinValue) {
-                TimeSpan duration = data.EndTime - data.StartTime;
-                data.Duration = duration;
-                if (duration.TotalMilliseconds > 0) {
-                    data.SpeedAvg = 1000 * distance / duration.TotalMilliseconds;
-                }
-            }
-            data.setLocationAndCategoryFromFileName(fileName);
-            // Convert times to the time zone of the location
-            if (!Double.IsNaN(data.LatStart) && !Double.IsNaN(data.LonStart) &&
-                data.StartTime != DateTime.MinValue && data.EndTime != DateTime.MinValue) {
-                try {
-                    data.TZInfo = GetTimeZoneInfoForLocation(data.LatStart, data.LonStart);
-                    data.TZInfoFromLatLon = true;
-                } catch (Exception) {
-                    data.TZInfo = TimeZoneInfo.Local;
-                }
-                data.StartTime = TimeZoneInfo.ConvertTimeFromUtc(data.StartTime, data.TZInfo);
-                data.EndTime = TimeZoneInfo.ConvertTimeFromUtc(data.EndTime, data.TZInfo);
-            } else {
-                data.TZInfo = TimeZoneInfo.Local;
-            }
+            data.processValues(timeValsList, speedValsList, speedTimeValsList,
+            eleValsList, hrValsList, hrTimeValsList, nTrks, nSegs, nTpts, nHr);
             return data;
+        }
+
+        private void processValues(List<long> timeValsList,
+            List<double> speedValsList, List<long> speedTimeValsList,
+            List<double> eleValsList,
+            List<double> hrValsList, List<long> hrTimeValsList,
+            int nTracks, int nSegments, int nTrackPoints, int nHrValues) {
+
+            // Convert to arrays
+            long[] timeVals = timeValsList.ToArray();
+            double[] speedVals = speedValsList.ToArray();
+            long[] speedTimeVals = speedTimeValsList.ToArray();
+            double[] eleVals = eleValsList.ToArray();
+            double[] hrVals = hrValsList.ToArray();
+            long[] hrTimeVals = hrTimeValsList.ToArray();
+
+            NTracks = nTracks;
+            NSegments = nSegments;
+            NTrackPoints = nTrackPoints;
+            NHrValues = nHrValues;
+
+            setLocationAndCategoryFromFileName(FileName);
+
+            // Convert times to the time zone of the location
+            if (!Double.IsNaN(LatStart) && !Double.IsNaN(LonStart) &&
+                StartTime != DateTime.MinValue && EndTime != DateTime.MinValue) {
+                try {
+                    TZId = GetTimeZoneIdForLocation(LatStart, LonStart);
+                    TZInfoFromLatLon = true;
+                } catch (Exception) {
+                    TZId = TimeZoneInfo.Local.Id;
+                }
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(TZId);
+                StartTime = TimeZoneInfo.ConvertTimeFromUtc(StartTime, tzi);
+                EndTime = TimeZoneInfo.ConvertTimeFromUtc(EndTime, tzi);
+            } else {
+                TZId = TimeZoneInfo.Local.Id;
+            }
+            int nTimeVals = timeVals.Length;
+
+            if (StartTime != DateTime.MinValue && EndTime != DateTime.MinValue) {
+                TimeSpan duration = EndTime - StartTime;
+                Duration = duration;
+                if (duration.TotalMilliseconds > 0) {
+                    SpeedAvgSimple = 1000 * Distance / duration.TotalMilliseconds;
+                }
+            }
+
+            // Process arrays
+            // HR
+            double[] stats = null, stats1 = null;
+            if (hrVals.Length > 0 && HrStartTime != DateTime.MinValue &&
+                HrEndTime != DateTime.MinValue) {
+                HrDuration = HrEndTime - HrStartTime;
+                stats = getTimeAverageStats(hrVals, hrTimeVals, 0);
+                if (stats != null) {
+                    HrMin = (int)Math.Round(stats[0]);
+                    HrMax = (int)Math.Round(stats[1]);
+                    HrAvg = stats[2];
+                } else {
+                    // Get simple average
+                    stats = getSimpleStats(hrVals, hrTimeVals, 0);
+                    if (stats != null) {
+                        HrMin = (int)Math.Round(stats[0]);
+                        HrMax = (int)Math.Round(stats[1]);
+                        HrAvg = stats[2];
+                    }
+                }
+            }
+
+            // Speed
+            if (speedVals.Length > 0) {
+                stats = getTimeAverageStats(speedVals, speedTimeVals, 0);
+                if (stats != null) {
+                    SpeedMin = stats[0];
+                    SpeedMax = stats[1];
+                    SpeedAvg = stats[2];
+                } else {
+                    // Get simple average
+                    stats = getSimpleStats(speedVals, speedTimeVals, 0);
+                    if (stats != null) {
+                        SpeedMin = stats[0];
+                        SpeedMax = stats[1];
+                        SpeedAvg = stats[2];
+                    }
+                }
+                // Moving average
+                double noMoveSpeed = NO_MOVE_SPEED;
+                stats = getTimeAverageStats(speedVals, speedTimeVals, noMoveSpeed);
+                if (stats != null) {
+                    SpeedAvgMoving = stats[2];
+                } else {
+                    // Get simple average
+                    stats = getSimpleStats(speedVals, speedTimeVals, noMoveSpeed);
+                    if (stats != null) {
+                        SpeedAvgMoving = stats[2];
+                    }
+                }
+
+            }
+
+            // Elevation
+            if (eleVals.Length > 0) {
+                stats = getTimeAverageStats(eleVals, timeVals, 0);
+                stats1 = getEleStats(eleVals, timeVals);
+                if (stats != null) {
+                    EleMin = stats[0];
+                    EleMax = stats[1];
+                    EleAvg = stats[2];
+                }
+                if (stats1 != null) {
+                    EleGain = stats1[0];
+                    EleLoss = stats1[1];
+                }
+            } else {
+                // Get simple average
+                stats = getSimpleStats(eleVals, timeVals, 0);
+                if (stats != null) {
+                    EleMin = stats[0];
+                    EleMax = stats[1];
+                    EleAvg = stats[2];
+                }
+            }
         }
 
         public void setLocationAndCategoryFromFileName(string fileName) {
@@ -430,6 +602,306 @@ namespace Exercise_Analyzer {
                     Location += " " + tokens[i];
                 }
             }
+        }
+
+
+#if false
+        /// <summary>
+        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lon"></param>
+        /// <param name="utcDate"></param>
+        /// <returns></returns>
+        public static DateTime GetDateTimeForLocation(double lat, double lon, DateTime utcDate) {
+            TimeZoneInfo tzInfo = GetTimeZoneInfoForLocation(lat, lon);
+            DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
+            return convertedTime;
+        }
+
+        /// <summary>
+        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lon"></param>
+        /// <param name="utcDate"></param>
+        /// <returns></returns>
+        public static TimeZoneInfo GetTimeZoneInfoForLocation(double lat, double lon) {
+            string tzIana = TimeZoneLookup.GetTimeZone(lat, lon).Result;
+            string tzId = TZConvert.IanaToWindows(tzIana);
+            TimeZoneInfo tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+            return tzInfo;
+        }
+#endif
+
+        public static string GetTimeZoneIdForLocation(double lat, double lon) {
+            string tzIana = TimeZoneLookup.GetTimeZone(lat, lon).Result;
+            string tzId = TZConvert.IanaToWindows(tzIana);
+            return tzId;
+        }
+
+        /// <summary>
+        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
+        /// </summary>
+        /// <returns></returns>
+        public string info() {
+            if (String.IsNullOrEmpty(FileName)) {
+                return "No fileName defined";
+            }
+            string info = FileName + NL;
+            info += "Creator: " + Creator + NL;
+            info += "Category: " + Category + NL;
+            info += "Location: " + Location + NL;
+            info += "NTracks=" + NTracks + " Nsegments=" + NSegments
+                + " NTrackPoints=" + NTrackPoints + NL;
+            if (TZId == null) {
+                info += "TimeZone: " + "Not defined" + NL;
+            } else {
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(TZId);
+                TimeZoneValues abbrs = TZNames.GetAbbreviationsForTimeZone(tzi.Id, "en-US");
+                info += "TimeZone: " + tzi
+                    + " " + (tzi.IsDaylightSavingTime(StartTime) ?
+                    abbrs.Daylight : abbrs.Standard) + NL;
+            }
+            info += "TimeZoneInfoFromLatLon: " + TZInfoFromLatLon + NL;
+            info += "Start Time: " + StartTime + " End Time: " + EndTime + NL;
+            info += "Duration: " + Duration + NL;
+            info += "Distance: " + String.Format("{0:f2} mi", GpsUtils.M2MI * Distance) + NL;
+            info += "Average Speed: " + String.Format("{0:f2} mi/hr",
+                GpsUtils.M2MI / GpsUtils.SEC2HR * SpeedAvg) + NL;
+            string hrFormat = "Heart Rate: Avg={0:f1} Min={1:f0} Max={2:f0}";
+            info += ((HrAvg > 0) ?
+                String.Format(hrFormat, HrAvg, HrMin, HrMax) :
+                "Heart Rate: No heart rate data") + NL;
+
+            info += "NTracks= " + NTracks + " Nsegments=" + NSegments
+                + " NTrackPoints=" + NTrackPoints + NL;
+            string eleFormat = "Elevation: Start={0:f0} Min={1:f0} Max={2:f0} Gain={3:f0} Loss={4:f0} ft";
+            info += (!Double.IsNaN(EleStart) ?
+                    String.Format(eleFormat, GpsUtils.M2MI * EleStart,
+                    GpsUtils.M2FT * EleMin, GpsUtils.M2MI * EleMax,
+                    GpsUtils.M2FT * (EleMax - EleStart),
+                    GpsUtils.M2FT * (EleStart - EleMin)) :
+                    "Elevation: No elevation data") + NL;
+            string boundsFormat = "Bounds: LatMin={0:f6} LatMax=={1:f6} LonMin={2:f6} LonMax={3:f6}";
+            info += (!Double.IsNaN(LatStart) ?
+                    String.Format(boundsFormat, LatMin, LatMax, LonMin, LonMax) :
+                    "Bounds: No location data") + NL;
+
+            // Strip the final NL
+            info = info.Substring(0, info.Length - NL.Length);
+
+            return info;
+        }
+
+        /**
+         * Gets the statistics from the given values and time values by averaging
+         * over the values, not over the actual time.
+         * 
+         * @param vals
+         * @param timeVals
+         * @return {min, max, avg} or null on error.
+         */
+
+        public static double[] getSimpleStats(double[] vals, long[] timeVals,
+            double omitBelow) {
+            // System.out.println("vals: " + vals.Length + ", timeVals: "
+            // + timeVals.Length);
+            if (vals.Length != timeVals.Length) {
+                //Utils.errMsg("getSimpleStats: Array sizes (vals: " + vals.Length
+                //    + ", timeVals: " + timeVals.Length + ") do not match");
+                return null;
+            }
+            int len = vals.Length;
+            if (len == 0) {
+                return new double[] { 0, 0, 0 };
+            }
+            double max = -Double.MaxValue;
+            double min = Double.MaxValue;
+            double sum = 0;
+            double val;
+            int nVals = 0;
+            for (int i = 0; i < len; i++) {
+                val = vals[i];
+                if (Double.IsNaN(val)) continue;
+                if (val < omitBelow) continue;
+                nVals++;
+                sum += val;
+                if (val > max) {
+                    max = val;
+                }
+                if (val < min) {
+                    min = val;
+                }
+            }
+            if (nVals == 0) {
+                return null;
+            }
+            sum /= nVals;
+            return new double[] { min, max, sum };
+        }
+
+        /**
+         * Gets the statistics from the given values and time values by averaging
+         * over the values weighted by the time.
+         * 
+         * @param vals
+         * @param timeVals
+         * @return {min, max, avg} or null on error.
+         */
+        public static double[] getTimeAverageStats(double[] vals, long[] timeVals,
+            double omitBelow) {
+            // System.out.println("vals: " + vals.length + ", timeVals: "
+            // + timeVals.Length);
+            if (vals.Length != timeVals.Length) {
+                //Utils
+                //    .errMsg("getTimeAverageStats: Array sizes (vals: " + vals.Length
+                //        + ", timeVals: " + timeVals.Length + ") do not match");
+                return null;
+            }
+            int len = vals.Length;
+            if (len == 0) {
+                return new double[] { 0, 0, 0 };
+            }
+            if (len < 2) {
+                return new double[] { vals[0], vals[0], vals[0] };
+            }
+            double max = -Double.MaxValue;
+            double min = Double.MaxValue;
+            double sum = 0;
+            double val;
+            // Check for NaN
+            for (int i = 0; i < len; i++) {
+                val = vals[i];
+                if (Double.IsNaN(val)) {
+                    return null;
+                }
+            }
+
+            // Loop over values.
+            double totalWeight = 0;
+            double weight = 0; ;
+            for (int i = 0; i < len; i++) {
+                val = vals[i];
+                if (Double.IsNaN(val)) continue;
+                if (val < omitBelow) continue;
+                if (i == 0) {
+                    weight = .5 * (timeVals[i + 1] - timeVals[i]);
+                } else if (i == len - 1) {
+                    weight = .5 * (timeVals[i] - timeVals[i - 1]);
+                } else {
+                    weight = .5 * (timeVals[i] - timeVals[i - 1]);
+                }
+                totalWeight += weight;
+                // Shoudn't happen
+                sum += val * weight;
+                if (val > max) {
+                    max = val;
+                }
+                if (val < min) {
+                    min = val;
+                }
+            }
+            if (totalWeight == 0) {
+                return null;
+            }
+            sum /= (totalWeight);
+            return new double[] { min, max, sum };
+        }
+
+        /**
+         * Gets the elevation statistics from the given values and time values.
+         * These include elevation gain and loss.
+         * 
+         * @param vals
+         * @param timeVals
+         * @return {gain, loss} or null on error.
+         */
+        public static double[] getEleStats(double[] vals, long[] timeVals) {
+            // System.out.println("vals: " + vals.Length + ", timeVals: "
+            // + timeVals.Length);
+            if (vals.Length != timeVals.Length) {
+                //Utils.errMsg("getSimpleStats: Array sizes (vals: " + vals.Length
+                //    + ", timeVals: " + timeVals.Length + ") do not match");
+                return null;
+            }
+            int len = vals.Length;
+            if (len == 0) {
+                return new double[] { 0, 0 };
+            }
+            double gain = 0;
+            double loss = 0;
+            double val;
+            int nVals = 0;
+            for (int i = 1; i < len; i++) {
+                val = vals[i] - vals[i - 1];
+                if (Double.IsNaN(val)) continue;
+                nVals++;
+                if (val > 0) {
+                    gain += val;
+                } else if (val < 0) {
+                    loss += -val;
+                }
+            }
+            if (nVals == 0) {
+                return null;
+            }
+            return new double[] { gain, loss };
+        }
+
+        public static string formatDuration(TimeSpan duration) {
+            int days = duration.Days;
+            int hours = duration.Hours;
+            int minutes = duration.Minutes;
+            int seconds = duration.Seconds;
+            string val = "";
+            if (days > 0) val += days + "d ";
+            if (hours > 0) val += hours + "h ";
+            if (minutes > 0) val += minutes + "m ";
+            if (seconds > 0) val += seconds + "s ";
+            return val;
+        }
+
+        public static string formatSpeed(double speed) {
+            if (speed == 0) return "";
+            return $"{GpsUtils.M2MI / GpsUtils.SEC2HR * speed:f2}";
+        }
+
+        public static string formatPaceSec(double speed) {
+            if (speed == 0) return "";
+            double pace = GpsUtils.SEC2HR / GpsUtils.M2MI * 3600 / speed;
+            return $"{pace:f2}";
+        }
+
+        public static string formatPace(double speed) {
+            if (speed == 0) return "";
+            double pace = GpsUtils.SEC2HR / GpsUtils.M2MI * 3600 / speed;
+            TimeSpan span =
+                new TimeSpan((long)(Math.Round(pace * TimeSpan.TicksPerSecond)));
+            return formatDuration(span);
+        }
+
+        public static string formatHeartRateAvg(double hr) {
+            if (hr == 0) return "";
+            return $"{hr:f1}";
+        }
+
+        public static string formatElevation(double elevation) {
+            if (Double.IsNaN(elevation) ||
+                elevation == -Double.MaxValue || elevation == Double.MaxValue) {
+                return "";
+            }
+            return $"{GpsUtils.M2FT * elevation:f2}";
+        }
+
+        public static string formatTimeStl(DateTime time) {
+            if (time == DateTime.MinValue) return "";
+            return time.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        public static string formatMonthStl(DateTime time) {
+            if (time == DateTime.MinValue) return "";
+            return (time.Month - 1).ToString();
         }
 
         [JsonIgnore]
@@ -517,140 +989,6 @@ namespace Exercise_Analyzer {
                 return Path.GetExtension(FileName).ToLower() == ".gpx";
             }
         }
-
-#if false
-        /// <summary>
-        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
-        /// </summary>
-        /// <param name="lat"></param>
-        /// <param name="lon"></param>
-        /// <param name="utcDate"></param>
-        /// <returns></returns>
-        public static DateTime GetDateTimeForLocation(double lat, double lon, DateTime utcDate) {
-            TimeZoneInfo tzInfo = GetTimeZoneInfoForLocation(lat, lon);
-            DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
-            return convertedTime;
-        }
-#endif
-
-        /// <summary>
-        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
-        /// </summary>
-        /// <param name="lat"></param>
-        /// <param name="lon"></param>
-        /// <param name="utcDate"></param>
-        /// <returns></returns>
-        public static TimeZoneInfo GetTimeZoneInfoForLocation(double lat, double lon) {
-            string tzIana = TimeZoneLookup.GetTimeZone(lat, lon).Result;
-            string tzMs = TZConvert.IanaToWindows(tzIana);
-            TimeZoneInfo tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tzMs);
-            return tzInfo;
-        }
-
-        public string info() {
-            if (String.IsNullOrEmpty(FileName)) {
-                return "No fileName defined";
-            }
-            if (TZInfo == null) { };
-            string info = FileName + NL;
-            info += "Creator: " + Creator + NL;
-            info += "Category: " + Category + NL;
-            info += "Location: " + Location + NL;
-            info += "NTracks=" + NTracks + " Nsegments=" + NSegments
-                + " NTrackPoints=" + NTrackPoints + NL;
-            if (TZInfo == null) {
-                info += "TimeZone: " + "Not defined" + NL;
-            } else {
-                info += "TimeZone: " + TZInfo
-                    + " " + (TZInfo.IsDaylightSavingTime(StartTime) ? "DST" : "ST") + NL;
-            }
-            info += "TimeZoneInfoFromLatLon: " + TZInfoFromLatLon + NL;
-            info += "Start Time: " + StartTime + " End Time: " + EndTime + NL;
-            info += "Duration: " + Duration + NL;
-            info += "Distance: " + String.Format("{0:f2} mi", GpsUtils.M2MI * Distance) + NL;
-            info += "Average Speed: " + String.Format("{0:f2} mi/hr",
-                GpsUtils.M2MI / GpsUtils.SEC2HR * SpeedAvg) + NL;
-            string hrFormat = "Heart Rate: Avg={0:f1} Min={1:f0} Max={2:f0}";
-            info += ((HrAvg > 0) ?
-                String.Format(hrFormat, HrAvg, HrMin, HrMax) :
-                "Heart Rate: No heart rate data") + NL;
-
-            info += "NTracks= " + NTracks + " Nsegments=" + NSegments
-                + " NTrackPoints=" + NTrackPoints + NL;
-            string eleFormat = "Elevation: Start={0:f0} Min={1:f0} Max={2:f0} Gain={3:f0} Loss={4:f0} ft";
-            info += (!Double.IsNaN(EleStart) ?
-                    String.Format(eleFormat, GpsUtils.M2MI * EleStart,
-                    GpsUtils.M2FT * EleMin, GpsUtils.M2MI * EleMax,
-                    GpsUtils.M2FT * (EleMax - EleStart),
-                    GpsUtils.M2FT * (EleStart - EleMin)) :
-                    "Elevation: No elevation data") + NL;
-            string boundsFormat = "Bounds: LatMin={0:f6} LatMax=={1:f6} LonMin={2:f6} LonMax={3:f6}";
-            info += (!Double.IsNaN(LatStart) ?
-                    String.Format(boundsFormat, LatMin, LatMax, LonMin, LonMax) :
-                    "Bounds: No location data") + NL;
-
-            // Strip the final NL
-            info = info.Substring(0, info.Length - NL.Length);
-
-            return info;
-        }
-
-        public static string formatDuration(TimeSpan duration) {
-            int days = duration.Days;
-            int hours = duration.Hours;
-            int minutes = duration.Minutes;
-            int seconds = duration.Seconds;
-            string val = "";
-            if (days > 0) val += days + "d ";
-            if (hours > 0) val += hours + "h ";
-            if (minutes > 0) val += minutes + "m ";
-            if (seconds > 0) val += seconds + "s ";
-            return val;
-        }
-
-        public static string formatSpeed(double speed) {
-            if (speed == 0) return "";
-            return $"{GpsUtils.M2MI / GpsUtils.SEC2HR * speed:f2}";
-        }
-
-        public static string formatPaceSec(double speed) {
-            if (speed == 0) return "";
-            double pace = GpsUtils.SEC2HR / GpsUtils.M2MI * 3600 / speed;
-            return $"{pace:f2}";
-        }
-
-        public static string formatPace(double speed) {
-            if (speed == 0) return "";
-            double pace = GpsUtils.SEC2HR / GpsUtils.M2MI * 3600 / speed;
-            TimeSpan span =
-                new TimeSpan((long)(Math.Round(pace * TimeSpan.TicksPerSecond)));
-            return formatDuration(span);
-        }
-
-        public static string formatHeartRate(double hr) {
-            if (hr == 0) return "";
-            return hr.ToString();
-        }
-
-        public static string formatElevation(double elevation) {
-            if (Double.IsNaN(elevation) ||
-                elevation == -Double.MaxValue || elevation == Double.MaxValue) {
-                return "";
-            }
-            return $"{GpsUtils.M2FT * elevation:f2}";
-        }
-
-        public static string formatTimeStl(DateTime time) {
-            if (time == DateTime.MinValue) return "";
-            return time.ToString("yyyy-MM-dd HH:mm:ss");
-        }
-
-        public static string formatMonthStl(DateTime time) {
-            if (time == DateTime.MinValue) return "";
-            return (time.Month - 1).ToString();
-        }
-
-
     }
 
     public class Index {

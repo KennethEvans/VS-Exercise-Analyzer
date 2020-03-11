@@ -398,7 +398,7 @@ namespace Exercise_Analyzer {
                         }
                         foreach (XElement elem in from item in tpt.Descendants()
                                                   select item) {
-                            if (elem.Name == "hr") {
+                            if (elem.Name.LocalName == "hr") {
                                 hr = (int)elem;
                             } else if (elem.Name.LocalName == "cad") {
                                 cad = (int)elem;

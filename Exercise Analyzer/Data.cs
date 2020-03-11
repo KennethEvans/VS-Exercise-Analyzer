@@ -17,7 +17,6 @@ namespace Exercise_Analyzer {
         public static readonly double NO_MOVE_SPEED = GpsUtils.NO_MOVE_SPEED;
 
         public string FileName { get; set; }
-        public List<string> AssociatedFiles { get; set; } = new List<string>();
         public int NTracks { get; set; }
         public int NSegments { get; set; }
         public int NTrackPoints { get; set; }
@@ -55,44 +54,9 @@ namespace Exercise_Analyzer {
         public int HrMax { get; set; } = Int32.MinValue;
         public int HrMin { get; set; } = Int32.MaxValue;
 
-        public Index[] makeIndex() {
-            Index[] objects = new Index[29];
-            objects[0] = new Index("NTracks", NTracks, 0);
-            objects[1] = new Index("NSegments", NSegments, 0);
-            objects[2] = new Index("NTrackPoints", NTrackPoints, 0);
-            objects[3] = new Index("NHrValues", NHrValues, 0);
-            objects[4] = new Index("StartTime", StartTime, DateTime.MinValue);
-            objects[5] = new Index("EndTime", EndTime, DateTime.MinValue);
-            objects[6] = new Index("HrStartTime", HrStartTime, DateTime.MinValue);
-            objects[7] = new Index("HrEndTime", HrEndTime, DateTime.MinValue);
-            objects[8] = new Index("Distance", Distance, 0);
-            objects[9] = new Index("Duration", Duration, null);
-            objects[10] = new Index("Creator", Creator, null);
-            objects[11] = new Index("Category", Category, null);
-            objects[12] = new Index("Location", Location, null);
-            objects[13] = new Index("LatStart", LatStart, Double.NaN);
-            objects[14] = new Index("LatMax", LatMax, -Double.MaxValue);
-            objects[15] = new Index("LatMin", LatMin, Double.MaxValue);
-            objects[16] = new Index("LonStart", LonStart, Double.NaN);
-            objects[17] = new Index("LonMax", LonMax, -Double.MaxValue);
-            objects[18] = new Index("LonMin", LonMin, Double.MaxValue);
-            objects[19] = new Index("EleStart", EleStart, Double.NaN);
-            objects[20] = new Index("EleMax", EleMax, -Double.MaxValue);
-            objects[21] = new Index("EleMin", EleMin, Double.MaxValue);
-            objects[22] = new Index("SpeedAvg", SpeedAvg, 0);
-            objects[23] = new Index("SpeedAvgSimple", SpeedAvgSimple, 0);
-            objects[24] = new Index("SpeedMax", SpeedMax, 0);
-            objects[25] = new Index("SpeedMin", SpeedMin, 0);
-            objects[26] = new Index("HrAvg", HrAvg, 0);
-            objects[27] = new Index("HrMax", HrMax, Int32.MinValue);
-            objects[28] = new Index("HrMin", HrMin, Int32.MaxValue);
-            return objects;
-        }
-
         public static ExerciseData processTcx(string fileName) {
             ExerciseData data = new ExerciseData();
             data.FileName = fileName;
-            data.AssociatedFiles.Add(fileName);
 
             XDocument doc = XDocument.Load(fileName);
             XElement tcx = doc.Root;
@@ -112,8 +76,6 @@ namespace Exercise_Analyzer {
             double prevLat = 0, prevLon = 0;
             long startTime = long.MaxValue;
             long endTime = 0;
-            long startHrTime = long.MaxValue;
-            long endHrTime = 0;
             double deltaLength, speed;
             double prevTime = -1;
             double deltaTime;
@@ -121,7 +83,6 @@ namespace Exercise_Analyzer {
 
             int nAct = 0, nLaps = 0, nSegs = 0, nTpts = 0, nHr = 0;
             double lat, lon, ele, distance = 0, hrSum = 0;
-            double latPrev = Double.NaN, lonPrev = Double.NaN;
             DateTime time;
             int hr;
             foreach (XElement activity in activities) {
@@ -156,7 +117,6 @@ namespace Exercise_Analyzer {
                            from item in trk.Elements()
                            where item.Name.LocalName == "Trackpoint"
                            select item;
-                        latPrev = lonPrev = Double.NaN;
                         foreach (XElement tpt in tpts) {
                             nTpts++;
                             lat = lon = ele = Double.NaN;
@@ -170,12 +130,8 @@ namespace Exercise_Analyzer {
                                 } else if (elem.Name.LocalName == "AltitudeMeters") {
                                     ele = (double)elem;
                                 } else if (elem.Name.LocalName == "Time") {
-#if convertTimeToUTC
                                     // Fix for bad times in Polar GPX
                                     time = ((DateTime)elem).ToUniversalTime();
-#else
-                                time = (DateTime)elem;
-#endif
                                     if (time.Ticks < startTime) {
                                         startTime = time.Ticks;
                                     }
@@ -257,7 +213,6 @@ namespace Exercise_Analyzer {
         public static ExerciseData processGpx(string fileName) {
             ExerciseData data = new ExerciseData();
             data.FileName = fileName;
-            data.AssociatedFiles.Add(fileName);
 
             XDocument doc = XDocument.Load(fileName);
             XElement gpx = doc.Root;
@@ -302,8 +257,6 @@ namespace Exercise_Analyzer {
             double prevLat = 0, prevLon = 0;
             long startTime = long.MaxValue;
             long endTime = 0;
-            long startHrTime = long.MaxValue;
-            long endHrTime = 0;
             double deltaLength, speed;
             double prevTime = -1;
             double deltaTime;
@@ -311,7 +264,6 @@ namespace Exercise_Analyzer {
 
             int nSegs = 0, nTrks = 0, nTpts = 0, nHr = 0;
             double lat, lon, ele, distance = 0, hrSum = 0;
-            double latPrev = Double.NaN, lonPrev = Double.NaN;
             DateTime time;
             int hr;
             foreach (XElement trk in trks) {
@@ -335,7 +287,6 @@ namespace Exercise_Analyzer {
                        from item in seg.Elements()
                        where item.Name.LocalName == "trkpt"
                        select item;
-                    latPrev = lonPrev = Double.NaN;
                     foreach (XElement tpt in tpts) {
                         nTpts++;
                         lat = lon = ele = Double.NaN;
@@ -353,12 +304,8 @@ namespace Exercise_Analyzer {
                             if (elem.Name.LocalName == "ele") {
                                 ele = (double)elem;
                             } else if (elem.Name.LocalName == "time") {
-#if convertTimeToUTC
                                 // Fix for bad times in Polar GPX
                                 time = ((DateTime)elem).ToUniversalTime();
-#else
-                                time = (DateTime)elem;
-#endif
                                 if (time.Ticks < startTime) {
                                     startTime = time.Ticks;
                                 }
@@ -464,7 +411,7 @@ namespace Exercise_Analyzer {
             if (!Double.IsNaN(LatStart) && !Double.IsNaN(LonStart) &&
                 StartTime != DateTime.MinValue && EndTime != DateTime.MinValue) {
                 try {
-                    TZId = GetTimeZoneIdForLocation(LatStart, LonStart);
+                    TZId = getTimeZoneIdForLocation(LatStart, LonStart);
                     TZInfoFromLatLon = true;
                 } catch (Exception) {
                     TZId = TimeZoneInfo.Local.Id;
@@ -524,13 +471,12 @@ namespace Exercise_Analyzer {
                     }
                 }
                 // Moving average
-                double noMoveSpeed = NO_MOVE_SPEED;
-                stats = getTimeAverageStats(speedVals, speedTimeVals, noMoveSpeed);
+                stats = getTimeAverageStats(speedVals, speedTimeVals, NO_MOVE_SPEED);
                 if (stats != null) {
                     SpeedAvgMoving = stats[2];
                 } else {
                     // Get simple average
-                    stats = getSimpleStats(speedVals, speedTimeVals, noMoveSpeed);
+                    stats = getSimpleStats(speedVals, speedTimeVals, NO_MOVE_SPEED);
                     if (stats != null) {
                         SpeedAvgMoving = stats[2];
                     }
@@ -634,13 +580,14 @@ namespace Exercise_Analyzer {
         }
 #endif
 
-        public static string GetTimeZoneIdForLocation(double lat, double lon) {
+        public static string getTimeZoneIdForLocation(double lat, double lon) {
             string tzIana = TimeZoneLookup.GetTimeZone(lat, lon).Result;
             string tzId = TZConvert.IanaToWindows(tzIana);
             return tzId;
         }
 
         /// <summary>
+        /// Gets an info string for this ExerciseData.
         /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
         /// </summary>
         /// <returns></returns>
@@ -988,26 +935,6 @@ namespace Exercise_Analyzer {
             {
                 return Path.GetExtension(FileName).ToLower() == ".gpx";
             }
-        }
-    }
-
-    public class Index {
-        public Object Value { get; set; }
-        public Object Default { get; set; }
-        public string Name { get; set; }
-
-        public Index(string name, Object val, Object defaultVal) {
-            Name = name;
-            Value = val;
-            Default = defaultVal;
-        }
-
-        public bool isDefault() {
-            return Value == Default;
-        }
-
-        public bool equals(Index index1) {
-            return Value == index1.Value;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿//#define consolidateVerbose
 //#define infoShowFilenames
+// #define exerciseutils
 
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,6 @@ namespace Exercise_Analyzer {
     public partial class MainForm : Form {
         public static readonly String NL = Environment.NewLine;
         public const string CSV_SEP = ",";
-        private string inputFile;
         private List<ExerciseData> exerciseDataList;
         private const bool processSilent = false;
 
@@ -188,16 +188,6 @@ namespace Exercise_Analyzer {
             });
         }
 
-        public string compareData(ExerciseData data1, ExerciseData data2) {
-            Index[] indices1 = data1.makeIndex();
-            Index[] indices2 = data2.makeIndex();
-            string info = "";
-            for (int i = 0; i < indices1.Length; i++) {
-                info += $"{indices1[i].Name,-25}{indices1[i].Value,-35}{indices2[i].Value,-35}" + NL;
-            }
-            return info;
-        }
-
         private void dataListSummary(bool verbose = false) {
             writeInfo(NL + "Exercise Data List");
             int nGpx = 0, nTcx = 0;
@@ -287,6 +277,7 @@ namespace Exercise_Analyzer {
             textBoxInfo.Text = "";
         }
 
+#if exerciseutils
         private void file_ProcessSingleFile_click(object sender, EventArgs e) {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "GPX and TCX|*.gpx;*.tcx|GPX|*.gpx|TCX|*.tcx";
@@ -300,6 +291,7 @@ namespace Exercise_Analyzer {
                 test(inputFile);
             }
         }
+#endif
 
         private void file_ProcessFiles_click(object sender, EventArgs e) {
             OpenFileDialog dlg = new OpenFileDialog();
@@ -409,6 +401,10 @@ namespace Exercise_Analyzer {
                     return;
                 }
             }
+        }
+
+        private void data_SingleItemInfo_click(object sender, EventArgs e) {
+
         }
     }
 }

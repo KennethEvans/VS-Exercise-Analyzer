@@ -89,9 +89,6 @@
     </Compile>
     <Compile Include="AboutBox.Designer.cs" />
     <Compile Include="Data.cs" />
-    <Compile Include="ExerciseUtils.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="GpsUtils.cs" />
     <Compile Include="gpx.cs" />
     <Compile Include="MainForm.cs">

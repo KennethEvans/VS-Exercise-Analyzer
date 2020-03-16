@@ -23,12 +23,13 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MultiChoiceListDialog));
             this.tableLayoutPanelTop = new System.Windows.Forms.TableLayoutPanel();
+            this.labelMsg = new System.Windows.Forms.Label();
             this.listBoxFiles = new System.Windows.Forms.ListBox();
             this.flowLayoutPanelButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.buttonOk = new System.Windows.Forms.Button();
-            this.labelMsg = new System.Windows.Forms.Label();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.SuspendLayout();
@@ -52,6 +53,17 @@
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanelTop.Size = new System.Drawing.Size(1928, 450);
             this.tableLayoutPanelTop.TabIndex = 1;
+            // 
+            // labelMsg
+            // 
+            this.labelMsg.AutoSize = true;
+            this.labelMsg.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelMsg.Location = new System.Drawing.Point(3, 0);
+            this.labelMsg.Name = "labelMsg";
+            this.labelMsg.Padding = new System.Windows.Forms.Padding(25);
+            this.labelMsg.Size = new System.Drawing.Size(1922, 82);
+            this.labelMsg.TabIndex = 3;
+            this.labelMsg.Text = "Select one or more items:";
             // 
             // listBoxFiles
             // 
@@ -104,23 +116,13 @@
             this.buttonOk.UseVisualStyleBackColor = true;
             this.buttonOk.Click += new System.EventHandler(this.onOkClick);
             // 
-            // labelMsg
-            // 
-            this.labelMsg.AutoSize = true;
-            this.labelMsg.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.labelMsg.Location = new System.Drawing.Point(3, 0);
-            this.labelMsg.Name = "labelMsg";
-            this.labelMsg.Padding = new System.Windows.Forms.Padding(25);
-            this.labelMsg.Size = new System.Drawing.Size(1922, 82);
-            this.labelMsg.TabIndex = 3;
-            this.labelMsg.Text = "Select one or more items:";
-            // 
             // MultiChoiceListDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(16F, 31F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1928, 450);
             this.Controls.Add(this.tableLayoutPanelTop);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MultiChoiceListDialog";
             this.Text = "MultiChoiceListDialog";
             this.tableLayoutPanelTop.ResumeLayout(false);

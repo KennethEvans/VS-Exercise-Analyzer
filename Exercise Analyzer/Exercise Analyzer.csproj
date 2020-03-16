@@ -159,15 +159,16 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="ExerciseAnalyzer.ico" />
-    <Content Include="Help\BlueMouse.256x256.png">
+    <Content Include="Help\book.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Help\book.css">
+    <Content Include="Help\Exercise Analyzer.256x256.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Help\Overview.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Include="Resources\logoPictureBox.Image.bmp" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -25,13 +25,13 @@
         private void InitializeComponent() {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MultiChoiceCheckDialog));
             this.tableLayoutPanelTop = new System.Windows.Forms.TableLayoutPanel();
+            this.labelMsg = new System.Windows.Forms.Label();
             this.flowLayoutPanelChoices = new System.Windows.Forms.FlowLayoutPanel();
             this.checkBoxSample = new System.Windows.Forms.CheckBox();
             this.flowLayoutPanelButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.buttonAbort = new System.Windows.Forms.Button();
             this.buttonOK = new System.Windows.Forms.Button();
-            this.labelMsg = new System.Windows.Forms.Label();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelChoices.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
@@ -55,6 +55,17 @@
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanelTop.Size = new System.Drawing.Size(1458, 473);
             this.tableLayoutPanelTop.TabIndex = 0;
+            // 
+            // labelMsg
+            // 
+            this.labelMsg.AutoSize = true;
+            this.labelMsg.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelMsg.Location = new System.Drawing.Point(3, 0);
+            this.labelMsg.Name = "labelMsg";
+            this.labelMsg.Padding = new System.Windows.Forms.Padding(25);
+            this.labelMsg.Size = new System.Drawing.Size(1452, 82);
+            this.labelMsg.TabIndex = 1;
+            this.labelMsg.Text = "Select which files to keep:";
             // 
             // flowLayoutPanelChoices
             // 
@@ -135,25 +146,14 @@
             this.buttonOK.UseVisualStyleBackColor = true;
             this.buttonOK.Click += new System.EventHandler(this.btn_clicked);
             // 
-            // labelMsg
-            // 
-            this.labelMsg.AutoSize = true;
-            this.labelMsg.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.labelMsg.Location = new System.Drawing.Point(3, 0);
-            this.labelMsg.Name = "labelMsg";
-            this.labelMsg.Padding = new System.Windows.Forms.Padding(25);
-            this.labelMsg.Size = new System.Drawing.Size(1452, 82);
-            this.labelMsg.TabIndex = 1;
-            this.labelMsg.Text = "Select which files to keep:";
-            // 
-            // MultiChoiceDialog
+            // MultiChoiceCheckDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(16F, 31F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1458, 473);
             this.Controls.Add(this.tableLayoutPanelTop);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "MultiChoiceDialog";
+            this.Name = "MultiChoiceCheckDialog";
             this.Text = "Select Files to Keep";
             this.tableLayoutPanelTop.ResumeLayout(false);
             this.tableLayoutPanelTop.PerformLayout();

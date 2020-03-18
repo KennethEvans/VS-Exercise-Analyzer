@@ -33,6 +33,7 @@
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.processFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.saveWeeklyReportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveCSVToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -66,7 +67,7 @@
             this.tableLayoutPanelTop.Controls.Add(this.textBoxInfo, 0, 3);
             this.tableLayoutPanelTop.Controls.Add(this.flowLayoutPanelButtons, 0, 4);
             this.tableLayoutPanelTop.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanelTop.Location = new System.Drawing.Point(0, 49);
+            this.tableLayoutPanelTop.Location = new System.Drawing.Point(0, 52);
             this.tableLayoutPanelTop.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.tableLayoutPanelTop.Name = "tableLayoutPanelTop";
             this.tableLayoutPanelTop.RowCount = 5;
@@ -75,7 +76,7 @@
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanelTop.Size = new System.Drawing.Size(1674, 887);
+            this.tableLayoutPanelTop.Size = new System.Drawing.Size(1674, 884);
             this.tableLayoutPanelTop.TabIndex = 1;
             // 
             // textBoxInfo
@@ -86,7 +87,7 @@
             this.textBoxInfo.Multiline = true;
             this.textBoxInfo.Name = "textBoxInfo";
             this.textBoxInfo.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxInfo.Size = new System.Drawing.Size(1668, 833);
+            this.textBoxInfo.Size = new System.Drawing.Size(1668, 830);
             this.textBoxInfo.TabIndex = 4;
             // 
             // flowLayoutPanelButtons
@@ -97,7 +98,7 @@
             this.flowLayoutPanelButtons.BackColor = System.Drawing.SystemColors.Control;
             this.flowLayoutPanelButtons.Controls.Add(this.buttonProcess1);
             this.flowLayoutPanelButtons.Controls.Add(this.buttonQuit);
-            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(745, 839);
+            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(745, 836);
             this.flowLayoutPanelButtons.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
             this.flowLayoutPanelButtons.Size = new System.Drawing.Size(183, 46);
@@ -141,7 +142,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1674, 49);
+            this.menuStrip1.Size = new System.Drawing.Size(1674, 52);
             this.menuStrip1.TabIndex = 2;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -150,41 +151,49 @@
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.processFilesToolStripMenuItem,
             this.toolStripSeparator1,
+            this.saveWeeklyReportToolStripMenuItem,
             this.saveCSVToolStripMenuItem,
             this.toolStripSeparator4,
             this.quitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(75, 45);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(75, 48);
             this.fileToolStripMenuItem.Text = "File";
             // 
             // processFilesToolStripMenuItem
             // 
             this.processFilesToolStripMenuItem.Name = "processFilesToolStripMenuItem";
-            this.processFilesToolStripMenuItem.Size = new System.Drawing.Size(320, 46);
+            this.processFilesToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
             this.processFilesToolStripMenuItem.Text = "Process Files...";
             this.processFilesToolStripMenuItem.Click += new System.EventHandler(this.file_ProcessFiles_click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(317, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(412, 6);
+            // 
+            // saveWeeklyReportToolStripMenuItem
+            // 
+            this.saveWeeklyReportToolStripMenuItem.Name = "saveWeeklyReportToolStripMenuItem";
+            this.saveWeeklyReportToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
+            this.saveWeeklyReportToolStripMenuItem.Text = "Save Weekly Report...";
+            this.saveWeeklyReportToolStripMenuItem.Click += new System.EventHandler(this.file_WeeklyReport_click);
             // 
             // saveCSVToolStripMenuItem
             // 
             this.saveCSVToolStripMenuItem.Name = "saveCSVToolStripMenuItem";
-            this.saveCSVToolStripMenuItem.Size = new System.Drawing.Size(320, 46);
-            this.saveCSVToolStripMenuItem.Text = "Save CSV...";
-            this.saveCSVToolStripMenuItem.Click += new System.EventHandler(this.file_SaveCsv_click);
+            this.saveCSVToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
+            this.saveCSVToolStripMenuItem.Text = "Save STL CSV...";
+            this.saveCSVToolStripMenuItem.Click += new System.EventHandler(this.file_SaveStlCsv_click);
             // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(317, 6);
+            this.toolStripSeparator4.Size = new System.Drawing.Size(412, 6);
             // 
             // quitToolStripMenuItem
             // 
             this.quitToolStripMenuItem.Name = "quitToolStripMenuItem";
-            this.quitToolStripMenuItem.Size = new System.Drawing.Size(320, 46);
+            this.quitToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
             this.quitToolStripMenuItem.Text = "Quit";
             this.quitToolStripMenuItem.Click += new System.EventHandler(this.file_Exit_click);
             // 
@@ -202,7 +211,7 @@
             this.exportToolStripMenuItem,
             this.importToolStripMenuItem});
             this.dataToolStripMenuItem.Name = "dataToolStripMenuItem";
-            this.dataToolStripMenuItem.Size = new System.Drawing.Size(91, 45);
+            this.dataToolStripMenuItem.Size = new System.Drawing.Size(91, 48);
             this.dataToolStripMenuItem.Text = "Data";
             // 
             // consolidateToolStripMenuItem
@@ -293,7 +302,7 @@
             this.overviewToolStripMenuItem,
             this.aboutToolStripMenuItem});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            this.helpToolStripMenuItem.Size = new System.Drawing.Size(92, 45);
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(92, 48);
             this.helpToolStripMenuItem.Text = "Help";
             // 
             // overviewToolStripMenuItem
@@ -362,6 +371,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
         private System.Windows.Forms.ToolStripMenuItem selectedItemsInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem overviewToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveWeeklyReportToolStripMenuItem;
     }
 }
 

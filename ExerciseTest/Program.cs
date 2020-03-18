@@ -25,6 +25,7 @@ namespace ExerciseTest {
         private const string TEST_GPX_FILE1 = @"C:\Users\evans\Documents\GPSLink\Test\Short.gpx";
         private const string TEST_GPX_FILE2 = @"C:\Users\evans\Documents\GPSLink\Test\Proud-Lake-Simplified.gpx";
         private const string TEST_GPX_FILE3 = @"C:\Users\evans\Documents\GPSLink\Test\Test-GPX-Inspector-TPV2.gpx";
+        private const string TEST_GPX_FILE4 = @"C:\Users\evans\Documents\GPSLink\STL\track2014-06-30-Workout-Rehab-1475018-Combined.gpx";
         private const string TEST_TCX_FILE1 = @"C:\Users\evans\Documents\GPSLink\Test\Kenneth_Evans_2020-02-24_15-43-34_Walking_Milford.tcx";
         private const string TEST_TCX_FILE2 = @"C:\Users\evans\Documents\GPSLink\Test\Kenneth_Evans_2020-03-04_15-31-00_Test_TCDB2.tcx";
         private const string TEST_TCX_FILE3 = @"C:\Users\evans\Documents\GPSLink\Test\TCX-Lat-Lon-Ele.tcx";

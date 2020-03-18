@@ -796,6 +796,13 @@ namespace Exercise_Analyzer {
             return new double[] { gain, loss };
         }
 
+        public static DateTime getStartOfWeek(DateTime dt) {
+            // Hard code as Sunday, could be changed
+            DayOfWeek startOfWeek = DayOfWeek.Sunday;
+            int diff = (7 + (dt.DayOfWeek - startOfWeek)) % 7;
+            return dt.AddDays(-1 * diff).Date;
+        }
+
         public static string formatDuration(TimeSpan duration) {
             int days = duration.Days;
             int hours = duration.Hours;
@@ -807,6 +814,10 @@ namespace Exercise_Analyzer {
             if (minutes > 0) val += minutes + "m ";
             if (seconds > 0) val += seconds + "s ";
             return val;
+        }
+
+        public static string formatDurationMinutes(TimeSpan duration) {
+            return $"{duration.TotalMinutes:f1}";
         }
 
         public static string formatSpeed(double speed) {
@@ -830,7 +841,7 @@ namespace Exercise_Analyzer {
 
         public static string formatHeartRateAvg(double hr) {
             if (hr == 0) return "";
-            return $"{hr:f1}";
+            return $"{hr:f0}";
         }
 
         public static string formatElevation(double elevation) {
@@ -844,6 +855,11 @@ namespace Exercise_Analyzer {
         public static string formatTimeStl(DateTime time) {
             if (time == DateTime.MinValue) return "";
             return time.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        public static string formatTimeWeekday(DateTime time) {
+            if (time == DateTime.MinValue) return "";
+            return time.ToString("ddd MMM dd yyyy");
         }
 
         public static string formatMonthStl(DateTime time) {

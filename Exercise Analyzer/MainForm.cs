@@ -18,6 +18,7 @@ namespace Exercise_Analyzer {
     public partial class MainForm : Form {
         public static readonly String NL = Environment.NewLine;
         public const string CSV_SEP = ",";
+        public enum Category { Walking, Cycling, Workout, Other }
         private List<ExerciseData> exerciseDataList;
         private const bool processSilent = false;
         private static ScrolledHTMLDialog overviewDlg;
@@ -211,7 +212,190 @@ namespace Exercise_Analyzer {
             }
         }
 
-        public void createCsv(string fileName) {
+        public void createWeeklyReport(string fileName) {
+            if (exerciseDataList == null) return;
+            string[] csvColumnNames1 = new string[] { "Year", "Month", "Week",
+                "Week Start Date",
+                "Walking", "Walking", "Walking", "Cycling", "Cycling", "Cycling",
+                "Workout", "Workout", "Workout", "Other", "Other", "Other",
+                "Total", "Total", "Total"};
+            string[] csvColumnNames2 = new string[] { "", "", "",
+                "",
+                "time", "min", "mi", "time", "min", "mi",
+                "time", "min", "mi", "time", "min", "mi",
+                "time", "min", "mi"};
+            CultureInfo ci = new CultureInfo("en-US");
+
+            // Make a new list of the required information
+            List<Breakdown> bdList = new List<Breakdown>();
+            foreach (ExerciseData data in exerciseDataList) {
+                bdList.Add(new Breakdown(ci, data.StartTime, data.Category,
+                    data.Duration, data.Distance));
+            }
+
+            // Group
+            var groupList = bdList
+                .GroupBy(x => new { x.StartTime, x.Year, x.WeekOfYear, x.Category, x.Duration, x.Distance })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.StartTime.Month).
+                    ThenBy(g => g.Key.WeekOfYear)
+                .Select(g => new {
+                    StartTime = g.Key.StartTime,
+                    Year = g.Key.Year,
+                    WeekOfYear = g.Key.WeekOfYear,
+                    Category = g.Key.Category,
+                    Duration = g.Key.Duration,
+                    Distance = g.Key.Distance
+                });
+
+            try {
+                using (StreamWriter sw = new StreamWriter(fileName)) {
+                    foreach (string col in csvColumnNames1) {
+                        sw.Write(col + CSV_SEP);
+                    }
+                    sw.Write(NL);
+                    foreach (string col in csvColumnNames2) {
+                        sw.Write(col + CSV_SEP);
+                    }
+                    sw.Write(NL);
+                    int curYear = -1;
+                    string curMonth = "";
+                    int curWeek = -1;
+                    DateTime curStartOfWeek = DateTime.MinValue;
+                    TimeSpan totalWalkingDuration = TimeSpan.FromSeconds(0);
+                    double totalWalkingDistance = 0;
+                    TimeSpan totalCyclingDuration = TimeSpan.FromSeconds(0);
+                    double totalCyclingDistance = 0;
+                    TimeSpan totalWorkoutDuration = TimeSpan.FromSeconds(0);
+                    double totalWorkoutDistance = 0;
+                    TimeSpan totalOtherDuration = TimeSpan.FromSeconds(0);
+                    double totalOtherDistance = 0;
+                    TimeSpan totalDuration = TimeSpan.FromSeconds(0);
+                    double totalDistance = 0;
+                    bool dataToWrite = false;
+                    foreach (var group in groupList) {
+                        if (group.Year != curYear) {
+                            if (dataToWrite) {
+                                writeWeeklyReportData(sw, curYear, curMonth, curWeek, curStartOfWeek,
+                                totalWalkingDuration, totalWalkingDistance,
+                                totalCyclingDuration, totalCyclingDistance,
+                                totalWorkoutDuration, totalWorkoutDistance,
+                                totalOtherDuration, totalOtherDistance,
+                                totalDuration, totalDistance);
+                            }
+                            dataToWrite = true;
+                            curYear = group.Year;
+                            curMonth = group.StartTime.ToString("MMMM");
+                            curWeek = group.WeekOfYear;
+                            curStartOfWeek = ExerciseData.getStartOfWeek(group.StartTime);
+                            totalWalkingDistance = 0;
+                            totalCyclingDistance = 0;
+                            totalWorkoutDistance = 0;
+                            totalOtherDistance = 0;
+                            totalDistance = 0;
+                            totalWalkingDuration = TimeSpan.FromSeconds(0);
+                            totalCyclingDuration = TimeSpan.FromSeconds(0);
+                            totalWorkoutDuration = TimeSpan.FromSeconds(0);
+                            totalOtherDuration = TimeSpan.FromSeconds(0);
+                            totalDuration = TimeSpan.FromSeconds(0);
+                        } else if (group.WeekOfYear != curWeek) {
+                            // Collect data by the week
+                            if (dataToWrite) {
+                                writeWeeklyReportData(sw, curYear, curMonth, curWeek, curStartOfWeek,
+                                totalWalkingDuration, totalWalkingDistance,
+                                totalCyclingDuration, totalCyclingDistance,
+                                totalWorkoutDuration, totalWorkoutDistance,
+                                totalOtherDuration, totalOtherDistance,
+                                totalDuration, totalDistance);
+                            }
+                            curMonth = group.StartTime.ToString("MMMM");
+                            curWeek = group.WeekOfYear;
+                            curStartOfWeek = ExerciseData.getStartOfWeek(group.StartTime);
+                            totalWalkingDistance = 0;
+                            totalCyclingDistance = 0;
+                            totalWorkoutDistance = 0;
+                            totalOtherDistance = 0;
+                            totalDistance = 0;
+                            totalWalkingDuration = TimeSpan.FromSeconds(0);
+                            totalCyclingDuration = TimeSpan.FromSeconds(0);
+                            totalWorkoutDuration = TimeSpan.FromSeconds(0);
+                            totalOtherDuration = TimeSpan.FromSeconds(0);
+                            totalDuration = TimeSpan.FromSeconds(0);
+                        }
+                        switch (group.Category) {
+                            case Category.Walking:
+                                totalWalkingDistance += group.Distance;
+                                totalWalkingDuration += group.Duration;
+                                totalDistance += group.Distance;
+                                totalDuration += group.Duration;
+                                break;
+                            case Category.Cycling:
+                                totalCyclingDistance += group.Distance;
+                                totalCyclingDuration += group.Duration;
+                                totalDistance += group.Distance;
+                                totalDuration += group.Duration;
+                                break;
+                            case Category.Workout:
+                                totalWorkoutDistance += group.Distance;
+                                totalWorkoutDuration += group.Duration;
+                                totalDistance += group.Distance;
+                                totalDuration += group.Duration;
+                                break;
+                            case Category.Other:
+                                totalOtherDistance += group.Distance;
+                                totalOtherDuration += group.Duration;
+                                totalDistance += group.Distance;
+                                totalDuration += group.Duration;
+                                break;
+                        }
+                    }
+                    if (dataToWrite) {
+                        writeWeeklyReportData(sw, curYear, curMonth, curWeek, curStartOfWeek,
+                        totalWalkingDuration, totalWalkingDistance,
+                        totalCyclingDuration, totalCyclingDistance,
+                        totalWorkoutDuration, totalWorkoutDistance,
+                        totalOtherDuration, totalOtherDistance,
+                        totalDuration, totalDistance);
+                    }
+                }
+                writeInfo(NL + "Wrote Weekly Summary CSV file " + fileName);
+            } catch (Exception ex) {
+                writeInfo(NL + "Error writing Weekly Summary CSV file " + fileName);
+                Utils.excMsg("Error writing Weekly Summary CSV file " + fileName, ex);
+                return;
+            }
+        }
+
+        private void writeWeeklyReportData(StreamWriter sw, int curYear,
+            string curMonth, int curWeek, DateTime curStartOfWeek,
+            TimeSpan totalWalkingDuration, double totalWalkingDistance,
+            TimeSpan totalCyclingDuration, double totalCyclingDistance,
+            TimeSpan totalWorkoutDuration, double totalWorkoutDistance,
+            TimeSpan totalOtherDuration, double totalOtherDistance,
+            TimeSpan totalDuration, double totalDistance) {
+            sw.Write(curYear + CSV_SEP); // year
+            sw.Write(curMonth + CSV_SEP); // month
+            sw.Write(curWeek + CSV_SEP); // week
+            sw.Write($"{ExerciseData.formatTimeWeekday(curStartOfWeek)}" + CSV_SEP);
+
+            sw.Write($"{ExerciseData.formatDuration(totalWalkingDuration)}" + CSV_SEP
+               + $"{ExerciseData.formatDurationMinutes(totalWalkingDuration)}" + CSV_SEP
+               + $"{GpsUtils.M2MI * totalWalkingDistance:f1}" + CSV_SEP);
+            sw.Write($"{ExerciseData.formatDuration(totalCyclingDuration)}" + CSV_SEP
+               + $"{ExerciseData.formatDurationMinutes(totalCyclingDuration)}" + CSV_SEP
+               + $"{GpsUtils.M2MI * totalCyclingDistance:f1}" + CSV_SEP);
+            sw.Write($"{ExerciseData.formatDuration(totalWorkoutDuration)}" + CSV_SEP
+               + $"{ExerciseData.formatDurationMinutes(totalWorkoutDuration)}" + CSV_SEP
+               + $"{GpsUtils.M2MI * totalWorkoutDistance:f1}" + CSV_SEP);
+            sw.Write($"{ExerciseData.formatDuration(totalOtherDuration)}" + CSV_SEP
+               + $"{ExerciseData.formatDurationMinutes(totalOtherDuration)}" + CSV_SEP
+               + $"{GpsUtils.M2MI * totalOtherDistance:f1}" + CSV_SEP);
+            sw.Write($"{ExerciseData.formatDuration(totalDuration)}" + CSV_SEP
+               + $"{ExerciseData.formatDurationMinutes(totalDuration)}" + CSV_SEP
+               + $"{GpsUtils.M2MI * totalDistance:f1}" + CSV_SEP);
+            sw.Write(NL);
+        }
+
+        public void createStlCsv(string fileName) {
             if (exerciseDataList == null) return;
             string[] csvColumnNames = new string[] { "id", "category",
                 "event", "location", "tags", "year", "month", "week of year",
@@ -261,9 +445,10 @@ namespace Exercise_Analyzer {
                         sw.Write(ExerciseData.formatElevation(data.EleMax) + CSV_SEP);  // elevation max
                         sw.Write(NL);
                     }
+                    writeInfo(NL + "Wrote STL CSV " + fileName);
                 }
             } catch (Exception ex) {
-                Utils.excMsg("Error writing CSV file " + fileName, ex);
+                Utils.excMsg("Error writing STL CSV file " + fileName, ex);
                 return;
             }
         }
@@ -364,7 +549,9 @@ namespace Exercise_Analyzer {
                         Formatting.Indented :
                         Formatting.None);
                     File.WriteAllText(dlg.FileName, json);
+                    writeInfo(NL + "Exported " + dlg.FileName);
                 } catch (Exception ex) {
+                    writeInfo(NL + "Error exporting file " + dlg.FileName);
                     Utils.excMsg("Error exporting file " + dlg.FileName, ex);
                     return;
                 }
@@ -383,27 +570,34 @@ namespace Exercise_Analyzer {
                     if (dataList != null) {
                         exerciseDataList.AddRange(dataList);
                     } else {
+                        writeInfo(NL + "Failed to convert  " + dlg.FileName);
                         Utils.errMsg("Failed to convert " + dlg.FileName);
                         return;
                     }
+                    writeInfo(NL + "Imported " + dlg.FileName);
                 } catch (Exception ex) {
+                    writeInfo(NL + "Error importing file " + dlg.FileName);
                     Utils.excMsg("Error importing file " + dlg.FileName, ex);
                     return;
                 }
             }
         }
 
-        private void file_SaveCsv_click(object sender, EventArgs e) {
+        private void file_WeeklyReport_click(object sender, EventArgs e) {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Filter = "CSV Files|*.csv";
+            dlg.Title = "Select a CSV file for Weekly Report";
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                createWeeklyReport(dlg.FileName);
+            }
+        }
+
+        private void file_SaveStlCsv_click(object sender, EventArgs e) {
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.Filter = "CSV Files|*.csv";
             dlg.Title = "Select a CSV file for Export";
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
-                try {
-                    createCsv(dlg.FileName);
-                } catch (Exception ex) {
-                    Utils.excMsg("Error saving CSV file " + dlg.FileName, ex);
-                    return;
-                }
+                createStlCsv(dlg.FileName);
             }
         }
 
@@ -441,6 +635,71 @@ namespace Exercise_Analyzer {
             } else {
                 overviewDlg.Visible = true;
             }
+        }
+    }
+
+    public class Breakdown {
+        public DateTime StartTime { get; set; }
+        public MainForm.Category Category { get; set; }
+        public CultureInfo CI { get; set; }
+        public TimeSpan Duration { get; set; }
+        public double Distance { get; set; }
+
+        public Breakdown(CultureInfo ci, DateTime startTime, string category,
+            TimeSpan duration, double distance) {
+            CI = ci;
+            StartTime = startTime;
+            if (category.ToLower().Equals("walking")) {
+                Category = MainForm.Category.Walking;
+            } else if (category.ToLower().Equals("cycling")) {
+                Category = MainForm.Category.Cycling;
+            } else if (category.ToLower().Equals("workout")) {
+                Category = MainForm.Category.Workout;
+            } else {
+                Category = MainForm.Category.Other;
+            }
+            Duration = duration;
+            Distance = distance;
+        }
+
+        [JsonIgnore]
+        public int Year
+        {
+            get
+            {
+                return StartTime.Year;
+            }
+        }
+
+        [JsonIgnore]
+        public int Month
+        {
+            get
+            {
+                return StartTime.Month;
+            }
+        }
+
+        [JsonIgnore]
+        public int WeekOfYear
+        {
+            get
+            {
+                Calendar cal = CI.Calendar;
+                CalendarWeekRule cwr = CI.DateTimeFormat.CalendarWeekRule;
+                DayOfWeek dow = CI.DateTimeFormat.FirstDayOfWeek;
+                return cal.GetWeekOfYear(StartTime, cwr, dow);
+            }
+        }
+
+        [JsonIgnore]
+        public string MonthString
+        {
+            get
+            {
+                return StartTime.ToString("MMMM");
+            }
+
         }
     }
 }

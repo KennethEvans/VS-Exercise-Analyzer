@@ -36,7 +36,6 @@ namespace ExerciseTest {
             Console.WriteLine("Exercise Test");
             gpxTest(gpxFileName);
             tcxTest(tcxFileName);
-
         }
 
 #if linqtoxsd
@@ -163,7 +162,7 @@ namespace ExerciseTest {
             if (tcx.Activities != null) {
                 Console.WriteLine("nActivities=" + tcx.Activities.Activity.Count);
             } else {
-                Console.WriteLine("nActivities=" + tcx.Activities.Activity.Count);
+                Console.WriteLine("nActivities=" + 0);
             }
             if (tcx.Courses != null) {
                 Console.WriteLine("nCourses=" + tcx.Courses.Course.Count);
@@ -218,7 +217,7 @@ namespace ExerciseTest {
                         nTkpts = 0;
                         trackpointList = trk.Trackpoint;
                         foreach (Trackpoint_t tpt in trackpointList) {
-                            nSegs++;
+                            nTkpts++;
                             if (tpt.Position != null) {
                                 position = tpt.Position;
                                 lat = position.LatitudeDegrees;
@@ -243,7 +242,7 @@ namespace ExerciseTest {
                             }
                             Console.WriteLine(
                                String.Format("{0:d4} lat={1:f6} lon={2:f6} ele={3:f6} hr={4} cad={5}",
-                              nTkpts++, lat, lon, ele, hr, cad));
+                              nTkpts, lat, lon, ele, hr, cad));
                         }
                     }
                 }

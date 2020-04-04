@@ -636,6 +636,18 @@ namespace Exercise_Analyzer {
                 overviewDlg.Visible = true;
             }
         }
+
+        private void tools_FormatTCX_GPX_click(object sender, EventArgs e) {
+            formatTcxGpx();
+        }
+
+        private void tools_FormatXml_click(object sender, EventArgs e) {
+            formatXml();
+        }
+
+        private void tools_SingleFileInfo_click(object sender, EventArgs e) {
+            getSingleFileInfo(this);
+        }
     }
 
     public class Breakdown {

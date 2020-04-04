@@ -50,9 +50,14 @@
             this.formattedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.unformattedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.importToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.formatTCXGPXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.formatXMLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.overviewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.singleFileInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -139,6 +144,7 @@
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.dataToolStripMenuItem,
+            this.toolsToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -296,6 +302,31 @@
             this.importToolStripMenuItem.Text = "Import...";
             this.importToolStripMenuItem.Click += new System.EventHandler(this.data_Import_click);
             // 
+            // toolsToolStripMenuItem
+            // 
+            this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.formatTCXGPXToolStripMenuItem,
+            this.formatXMLToolStripMenuItem,
+            this.toolStripSeparator5,
+            this.singleFileInfoToolStripMenuItem});
+            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(99, 48);
+            this.toolsToolStripMenuItem.Text = "Tools";
+            // 
+            // formatTCXGPXToolStripMenuItem
+            // 
+            this.formatTCXGPXToolStripMenuItem.Name = "formatTCXGPXToolStripMenuItem";
+            this.formatTCXGPXToolStripMenuItem.Size = new System.Drawing.Size(396, 46);
+            this.formatTCXGPXToolStripMenuItem.Text = "Format TCX/GPX...";
+            this.formatTCXGPXToolStripMenuItem.Click += new System.EventHandler(this.tools_FormatTCX_GPX_click);
+            // 
+            // formatXMLToolStripMenuItem
+            // 
+            this.formatXMLToolStripMenuItem.Name = "formatXMLToolStripMenuItem";
+            this.formatXMLToolStripMenuItem.Size = new System.Drawing.Size(396, 46);
+            this.formatXMLToolStripMenuItem.Text = "Format XML...";
+            this.formatXMLToolStripMenuItem.Click += new System.EventHandler(this.tools_FormatXml_click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -318,6 +349,18 @@
             this.aboutToolStripMenuItem.Size = new System.Drawing.Size(275, 46);
             this.aboutToolStripMenuItem.Text = "About...";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.help_About_click);
+            // 
+            // singleFileInfoToolStripMenuItem
+            // 
+            this.singleFileInfoToolStripMenuItem.Name = "singleFileInfoToolStripMenuItem";
+            this.singleFileInfoToolStripMenuItem.Size = new System.Drawing.Size(396, 46);
+            this.singleFileInfoToolStripMenuItem.Text = "Single File Info...";
+            this.singleFileInfoToolStripMenuItem.Click += new System.EventHandler(this.tools_SingleFileInfo_click);
+            // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(393, 6);
             // 
             // MainForm
             // 
@@ -372,6 +415,11 @@
         private System.Windows.Forms.ToolStripMenuItem selectedItemsInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem overviewToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveWeeklyReportToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem formatTCXGPXToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem formatXMLToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem singleFileInfoToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
     }
 }
 

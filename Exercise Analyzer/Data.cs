@@ -1,5 +1,9 @@
 ﻿#define convertTimeToUTC
+#undef debugging
 
+#if debugging
+using System.Diagnostics;
+#endif
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,10 +13,14 @@ using GeoTimeZone;
 using Newtonsoft.Json;
 using TimeZoneConverter;
 using TimeZoneNames;
+using www.garmin.com.xmlschemas.TrainingCenterDatabase.v2;
+using www.topografix.com.GPX_1_1;
 
 namespace Exercise_Analyzer {
     public class ExerciseData {
         public static readonly String NL = Environment.NewLine;
+        private const string NS_TrackPointExtension_v1 = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1";
+        private const string NS_TrackPointExtension_v2 = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2";
         public const int START_TIME_THRESHOLD_SECONDS = 300;
         public static readonly double NO_MOVE_SPEED = GpsUtils.NO_MOVE_SPEED;
 
@@ -210,6 +218,181 @@ namespace Exercise_Analyzer {
             return data;
         }
 
+        public static ExerciseData processTcx2(string fileName) {
+            ExerciseData data = new ExerciseData();
+            data.FileName = fileName;
+
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(fileName);
+
+            IList<Activity_t> activityList;
+            IList<ActivityLap_t> lapList;
+            IList<Track_t> trackList;
+            IList<Trackpoint_t> trackpointList;
+
+            Position_t position;
+
+            // Get Author info
+            if (tcx.Author != null) {
+                AbstractSource_t author = tcx.Author;
+                Console.WriteLine("author=" + author.Name);
+            }
+
+            List<long> timeValsList = new List<long>();
+            List<long> speedTimeValsList = new List<long>();
+            List<Double> speedValsList = new List<double>();
+            List<double> eleValsList = new List<double>();
+            List<long> hrTimeValsList = new List<long>();
+            List<double> hrValsList = new List<double>();
+            double prevLat = 0, prevLon = 0;
+            long startTime = long.MaxValue;
+            long endTime = 0;
+            double deltaLength, speed;
+            double prevTime = -1;
+            double deltaTime;
+            long lastTimeValue = -1;
+
+            int nAct = 0, nLaps = 0, nSegs = 0, nTpts = 0, nHr = 0;
+            double lat, lon, ele, distance = 0, hrSum = 0;
+            DateTime time;
+            int hr, cad;
+
+            //// Loop over activities
+            activityList = tcx.Activities.Activity;
+            nAct = 0;
+            foreach (Activity_t activity in activityList) {
+                Console.WriteLine("Activity " + nAct);
+                nAct++;
+                if (activity.Creator != null && activity.Creator.Name != null) {
+                    data.Creator = activity.Creator.Name;
+                }
+                // Loop over laps (are like tracks in GPX)
+                nLaps = 0;
+                lapList = activity.Lap;
+                foreach (ActivityLap_t lap in lapList) {
+                    Console.WriteLine("Lap (Track) " + nLaps);
+                    nLaps++;
+                    // Loop over tracks
+                    trackList = lap.Track;
+                    nSegs = 0;
+                    foreach (Track_t trk in trackList) {
+                        nSegs++;
+                        if (nSegs > 1) {
+                            // Use NaN to make a break between segments
+                            hrValsList.Add(Double.NaN);
+                            hrTimeValsList.Add(lastTimeValue);
+                            speedValsList.Add(Double.NaN);
+                            speedTimeValsList.Add(lastTimeValue);
+                            eleValsList.Add(Double.NaN);
+                            timeValsList.Add(lastTimeValue);
+                        }
+                        // Loop over trackpoints
+                        nTpts = 0;
+                        trackpointList = trk.Trackpoint;
+                        foreach (Trackpoint_t tpt in trackpointList) {
+                            nTpts++;
+                            lat = lon = ele = Double.NaN;
+                            hr = 0;
+                            time = DateTime.MinValue;
+                            if (tpt.Position != null) {
+                                position = tpt.Position;
+                                lat = position.LatitudeDegrees;
+                                lon = position.LongitudeDegrees;
+                            } else {
+                                lat = lon = Double.NaN;
+                            }
+                            if (tpt.AltitudeMeters != null) {
+                                ele = tpt.AltitudeMeters.Value;
+                            } else {
+                                ele = Double.NaN;
+                            }
+                            if (tpt.Time != null) {
+                                // Fix for bad times in Polar GPX
+                                time = tpt.Time.ToUniversalTime();
+                                if (time.Ticks < startTime) {
+                                    startTime = time.Ticks;
+                                }
+                                if (time.Ticks > endTime) {
+                                    endTime = time.Ticks;
+                                }
+                                timeValsList.Add(time.Ticks);
+                            }
+                            if (tpt.HeartRateBpm != null) {
+                                hr = tpt.HeartRateBpm.Value;
+                            } else {
+                                hr = 0;
+                            }
+                            if (tpt.Cadence != null) {
+                                cad = tpt.Cadence.Value;
+                            } else {
+                                cad = 0;
+                            }
+                            // Process
+                            if (time != DateTime.MinValue) {
+                                if (data.StartTime == DateTime.MinValue) {
+                                    data.StartTime = time;
+                                }
+                                data.EndTime = time;
+                            }
+                            if (!Double.IsNaN(lat) && !Double.IsNaN(lon)) {
+                                if (Double.IsNaN(data.LatStart)) {
+                                    data.LatStart = lat;
+                                    data.LonStart = lon;
+                                }
+                                if (lat > data.LatMax) data.LatMax = lat;
+                                if (lat < data.LatMin) data.LatMin = lat;
+                                if (lon > data.LonMax) data.LonMax = lon;
+                                if (lon < data.LonMin) data.LonMin = lon;
+                                if (prevTime != -1) {
+                                    // Should be the second track point
+                                    deltaLength = GpsUtils.greatCircleDistance(
+                                        prevLat, prevLon, lat, lon);
+                                    distance += deltaLength;
+                                    deltaTime = time.Ticks - prevTime;
+                                    speed = deltaTime > 0
+                                        ? TimeSpan.TicksPerSecond * deltaLength / deltaTime
+                                        : 0;
+                                    // Convert from m/sec to mi/hr
+                                    speedValsList.Add(speed);
+                                    speedTimeValsList
+                                        .Add(time.Ticks - (long)Math.Round(.5 * deltaTime));
+                                    if (Double.IsNaN(ele)) eleValsList.Add(0.0);
+                                }
+                                prevTime = time.Ticks;
+                                prevLat = lat;
+                                prevLon = lon;
+                            }
+                            if (!Double.IsNaN(ele)) {
+                                if (Double.IsNaN(data.EleStart)) {
+                                    data.EleStart = ele;
+                                }
+                                if (ele > data.EleMax) data.EleMax = ele;
+                                if (ele < data.EleMin) data.EleMin = ele;
+                                eleValsList.Add(ele);
+                            }
+                            if (hr > 0) {
+                                if (time != DateTime.MinValue) {
+                                    if (data.HrStartTime == DateTime.MinValue) {
+                                        data.HrStartTime = time;
+                                    }
+                                    data.HrEndTime = time;
+                                    hrSum += hr;
+                                    nHr++;
+                                    hrValsList.Add((double)hr);
+                                    hrTimeValsList.Add(time.Ticks);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // End of loops, process what was obtained
+            data.Distance = distance;
+            data.processValues(timeValsList, speedValsList, speedTimeValsList,
+            eleValsList, hrValsList, hrTimeValsList, nLaps, nSegs, nTpts, nHr);
+            return data;
+        }
+
         public static ExerciseData processGpx(string fileName) {
             ExerciseData data = new ExerciseData();
             data.FileName = fileName;
@@ -246,7 +429,6 @@ namespace Exercise_Analyzer {
                   where item.Name.LocalName == "trk"
                   select item;
 
-            // Loop over Activities, Laps, Tracks, and Trackpoints
             // Loop over Activities, Laps, Tracks, and Trackpoints
             List<long> timeValsList = new List<long>();
             List<long> speedTimeValsList = new List<long>();
@@ -386,12 +568,179 @@ namespace Exercise_Analyzer {
             return data;
         }
 
-        private void processValues(List<long> timeValsList,
-            List<double> speedValsList, List<long> speedTimeValsList,
-            List<double> eleValsList,
-            List<double> hrValsList, List<long> hrTimeValsList,
-            int nTracks, int nSegments, int nTrackPoints, int nHrValues) {
+        public static ExerciseData processGpx2(string fileName) {
+            ExerciseData data = new ExerciseData();
+            data.FileName = fileName;
 
+            gpx gpxType = gpx.Load(fileName);
+
+            if (gpxType.creator != null) {
+                data.Creator = gpxType.creator;
+            }
+
+            // STL files have this information
+            // They have category and location, but it is not standard
+            if (gpxType.metadata != null) {
+                metadataType metaData = gpxType.metadata;
+                if (metaData.author != null) {
+                    // Handle author;
+                }
+            }
+
+            IList<trkType> tracks = gpxType.trk;
+            extensionsType extensions;
+            IEnumerable<XElement> extensionElements;
+
+            // Loop over Activities, Laps, Tracks, and Trackpoints
+            List<long> timeValsList = new List<long>();
+            List<long> speedTimeValsList = new List<long>();
+            List<Double> speedValsList = new List<double>();
+            List<double> eleValsList = new List<double>();
+            List<long> hrTimeValsList = new List<long>();
+            List<double> hrValsList = new List<double>();
+            double prevLat = 0, prevLon = 0;
+            long startTime = long.MaxValue;
+            long endTime = 0;
+            double deltaLength, speed;
+            double prevTime = -1;
+            double deltaTime;
+            long lastTimeValue = -1;
+
+            int nSegs = 0, nTrks = 0, nTpts = 0, nHr = 0;
+            double lat, lon, ele, distance = 0, hrSum = 0;
+            DateTime time;
+            int hr, cad;
+            foreach (trkType trk in tracks) {
+                nTrks++;
+                foreach (trksegType seg in trk.trkseg) {
+                    nSegs++;
+                    if (nSegs > 1) {
+                        // Use NaN to make a break between segments
+                        hrValsList.Add(Double.NaN);
+                        hrTimeValsList.Add(lastTimeValue);
+                        speedValsList.Add(Double.NaN);
+                        speedTimeValsList.Add(lastTimeValue);
+                        eleValsList.Add(Double.NaN);
+                        timeValsList.Add(lastTimeValue);
+                    }
+                    foreach (wptType wpt in seg.trkpt) {
+                        nTpts++;
+                        lat = lon = ele = Double.NaN;
+                        hr = cad = 0;
+                        time = DateTime.MinValue;
+                        lat = (double)wpt.lat;
+                        lon = (double)wpt.lon;
+                        if (wpt.ele != null) {
+                            ele = (double)wpt.ele.Value;
+                        }
+                        if (wpt.time != null) {
+                            // Fix for bad times in Polar GPX
+                            time = wpt.time.Value.ToUniversalTime();
+                            if (time.Ticks < startTime) {
+                                startTime = time.Ticks;
+                            }
+                            if (time.Ticks > endTime) {
+                                endTime = time.Ticks;
+                            }
+                            timeValsList.Add(time.Ticks);
+                        }
+                        // Get hr and cad from the extension
+                        extensions = wpt.extensions;
+                        if (extensions != null) {
+                            extensionElements = extensions.Any;
+                            foreach (XElement element in extensionElements) {
+                                if (element == null || !element.HasElements) continue;
+                                IEnumerable<XElement> children = element.Elements();
+                                foreach (XElement child in children) {
+                                    XNamespace ns = child.GetDefaultNamespace();
+                                    if (ns.NamespaceName.Equals(NS_TrackPointExtension_v1)) {
+                                        if (child.Name.LocalName.Equals("hr")) hr = Int32.Parse(child.Value);
+                                        else if (child.Name.LocalName.Equals("cad")) cad = Int32.Parse(child.Value);
+                                    } else if (child.Name.LocalName.Equals(NS_TrackPointExtension_v2)) {
+                                        if (child.Name.LocalName.Equals("hr")) hr = Int32.Parse(child.Value);
+                                        else if (child.Name.LocalName.Equals("cad")) cad = Int32.Parse(child.Value);
+                                    }
+                                }
+                            }
+                        }
+                        if (time != DateTime.MinValue) {
+                            if (data.StartTime == DateTime.MinValue) {
+                                data.StartTime = time;
+                            }
+                            data.EndTime = time;
+                        }
+                        if (!Double.IsNaN(lat) && !Double.IsNaN(lon)) {
+                            if (Double.IsNaN(data.LatStart)) {
+                                data.LatStart = lat;
+                                data.LonStart = lon;
+                            }
+                            if (lat > data.LatMax) data.LatMax = lat;
+                            if (lat < data.LatMin) data.LatMin = lat;
+                            if (lon > data.LonMax) data.LonMax = lon;
+                            if (lon < data.LonMin) data.LonMin = lon;
+                            if (prevTime != -1) {
+                                // Should be the second track point
+                                deltaLength = GpsUtils.greatCircleDistance(
+                                    prevLat, prevLon, lat, lon);
+                                distance += deltaLength;
+                                deltaTime = time.Ticks - prevTime;
+                                speed = deltaTime > 0
+                                    ? TimeSpan.TicksPerSecond * deltaLength / deltaTime
+                                    : 0;
+                                // Convert from m/sec to mi/hr
+                                speedValsList.Add(speed);
+                                speedTimeValsList
+                                    .Add(time.Ticks - (long)Math.Round(.5 * deltaTime));
+                                if (Double.IsNaN(ele)) eleValsList.Add(0.0);
+                            }
+                            prevTime = time.Ticks;
+                            prevLat = lat;
+                            prevLon = lon;
+                        }
+                        if (!Double.IsNaN(ele)) {
+                            if (Double.IsNaN(data.EleStart)) {
+                                data.EleStart = ele;
+                            }
+                            if (ele > data.EleMax) data.EleMax = ele;
+                            if (ele < data.EleMin) data.EleMin = ele;
+                            eleValsList.Add(ele);
+                        }
+                        if (hr > 0) {
+                            if (time != DateTime.MinValue) {
+                                if (data.HrStartTime == DateTime.MinValue) {
+                                    data.HrStartTime = time;
+                                }
+                                data.HrEndTime = time;
+                                hrSum += hr;
+                                nHr++;
+                                hrValsList.Add((double)hr);
+                                hrTimeValsList.Add(time.Ticks);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // End of loops, process what was obtained
+            data.Distance = distance;
+            data.processValues(timeValsList, speedValsList, speedTimeValsList,
+            eleValsList, hrValsList, hrTimeValsList, nTrks, nSegs, nTpts, nHr);
+            return data;
+        }
+
+        private void processValues(List<long> timeValsList,
+        List<double> speedValsList, List<long> speedTimeValsList,
+        List<double> eleValsList,
+        List<double> hrValsList, List<long> hrTimeValsList,
+        int nTracks, int nSegments, int nTrackPoints, int nHrValues) {
+#if debugging
+            // DEBUG
+            Debug.WriteLine("speedTimeValsList");
+            Debug.WriteLine("nSpeedVals=" + speedValsList.Count + " nSpeedTimeVals=" + speedTimeValsList.Count);
+            for (int i = 0; i < speedValsList.Count; i++) {
+                Debug.WriteLine(speedValsList[i] + " " + speedTimeValsList[i]);
+            }
+#endif
             // Convert to arrays
             long[] timeVals = timeValsList.ToArray();
             double[] speedVals = speedValsList.ToArray();
@@ -509,6 +858,8 @@ namespace Exercise_Analyzer {
         }
 
         public void setLocationAndCategoryFromFileName(string fileName) {
+            if (Creator == null) return;
+            // Polar
             if (Creator.ToLower().Contains("polar")) {
                 string name = Path.GetFileNameWithoutExtension(fileName);
                 string[] tokens = name.Split('_');
@@ -548,8 +899,22 @@ namespace Exercise_Analyzer {
                     Location += " " + tokens[i];
                 }
             }
+            // Polar
+            if (Creator.ToLower().Contains("sportstracklive")
+                && String.IsNullOrEmpty(Category) && String.IsNullOrEmpty(Location)) {
+                string name = Path.GetFileNameWithoutExtension(fileName);
+                string[] tokens = name.Split('-');
+                int nTokens = tokens.Length;
+                if (nTokens < 6) {
+                    // Not the expected form for the filename
+                    Category = "STL";
+                    Location = "STL";
+                    return;
+                }
+                Category = tokens[3];
+                Location = tokens[4];
+            }
         }
-
 
 #if false
         /// <summary>
@@ -616,6 +981,8 @@ namespace Exercise_Analyzer {
             info += "Distance: " + String.Format("{0:f2} mi", GpsUtils.M2MI * Distance) + NL;
             info += "Average Speed: " + String.Format("{0:f2} mi/hr",
                 GpsUtils.M2MI / GpsUtils.SEC2HR * SpeedAvg) + NL;
+            info += "Moving Speed: " + String.Format("{0:f2} mi/hr",
+                GpsUtils.M2MI / GpsUtils.SEC2HR * SpeedAvgMoving) + NL;
             string hrFormat = "Heart Rate: Avg={0:f1} Min={1:f0} Max={2:f0}";
             info += ((HrAvg > 0) ?
                 String.Format(hrFormat, HrAvg, HrMin, HrMax) :

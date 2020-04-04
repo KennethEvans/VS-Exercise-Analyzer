@@ -82,6 +82,9 @@
     <Reference Include="TimeZoneNames, Version=4.0.1.0, Culture=neutral, PublicKeyToken=e20ab7d0d9479841, processorArchitecture=MSIL">
       <HintPath>..\packages\TimeZoneNames.4.0.1\lib\net461\TimeZoneNames.dll</HintPath>
     </Reference>
+    <Reference Include="Xml.Schema.Linq, Version=2.0.2.56002, Culture=neutral, PublicKeyToken=47d0c84d0ebb13e5, processorArchitecture=MSIL">
+      <HintPath>..\packages\LinqToXsd.2.0.2\lib\Xml.Schema.Linq.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AboutBox.cs">
@@ -91,6 +94,7 @@
     <Compile Include="Data.cs" />
     <Compile Include="GpsUtils.cs" />
     <Compile Include="gpx.cs" />
+    <Compile Include="gpx.xsd.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -117,6 +121,10 @@
     <Compile Include="ScrolledHTMLDialog.designer.cs">
       <DependentUpon>ScrolledHTMLDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Tools.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TrainingCenterDatabasev2.xsd.cs" />
     <Compile Include="Utils.cs" />
     <EmbeddedResource Include="AboutBox.resx">
       <DependentUpon>AboutBox.cs</DependentUpon>

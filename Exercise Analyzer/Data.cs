@@ -19,8 +19,6 @@ using www.topografix.com.GPX_1_1;
 namespace Exercise_Analyzer {
     public class ExerciseData {
         public static readonly String NL = Environment.NewLine;
-        private const string NS_TrackPointExtension_v1 = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1";
-        private const string NS_TrackPointExtension_v2 = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2";
         public const int START_TIME_THRESHOLD_SECONDS = 300;
         public static readonly double NO_MOVE_SPEED = GpsUtils.NO_MOVE_SPEED;
 
@@ -650,15 +648,13 @@ namespace Exercise_Analyzer {
                             extensionElements = extensions.Any;
                             foreach (XElement element in extensionElements) {
                                 if (element == null || !element.HasElements) continue;
-                                IEnumerable<XElement> children = element.Elements();
-                                foreach (XElement child in children) {
-                                    XNamespace ns = child.GetDefaultNamespace();
-                                    if (ns.NamespaceName.Equals(NS_TrackPointExtension_v1)) {
-                                        if (child.Name.LocalName.Equals("hr")) hr = Int32.Parse(child.Value);
-                                        else if (child.Name.LocalName.Equals("cad")) cad = Int32.Parse(child.Value);
-                                    } else if (child.Name.LocalName.Equals(NS_TrackPointExtension_v2)) {
-                                        if (child.Name.LocalName.Equals("hr")) hr = Int32.Parse(child.Value);
-                                        else if (child.Name.LocalName.Equals("cad")) cad = Int32.Parse(child.Value);
+                                foreach (XElement elem in from item in element.Descendants()
+                                                          select item) {
+                                    if (elem.Name.LocalName == "hr") {
+                                        hr = (int)elem;
+                                    }
+                                    if (elem.Name.LocalName == "cad") {
+                                        cad = (int)elem;
                                     }
                                 }
                             }

@@ -33,13 +33,13 @@ namespace Exercise_Analyzer {
             }
             if (ext.ToLower().Equals(".tcx")) {
                 TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(fileName);
-                string saveFilename = getSaveName(fileName);
+                string saveFilename = getSaveName(fileName, ".formatted");
                 if (saveFilename != null) {
                     tcx.Save(saveFilename);
                 }
             } else if (ext.ToLower().Equals(".gpx")) {
                 gpx gpxType = gpx.Load(fileName);
-                string saveFilename = getSaveName(fileName);
+                string saveFilename = getSaveName(fileName, ".formatted");
                 if (saveFilename != null) {
                     gpxType.Save(saveFilename);
                 }
@@ -73,21 +73,21 @@ namespace Exercise_Analyzer {
                 return;
             }
             XDocument doc = XDocument.Load(fileName);
-            string saveFilename = getSaveName(fileName);
+            string saveFilename = getSaveName(fileName, ".formatted-xml");
             if (saveFilename != null) {
                 // (Use second argument to get unformatted)
                 doc.Save(saveFilename);
             }
         }
 
-        public static string getSaveName(string fileName) {
+        public static string getSaveName(string fileName, string tag) {
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.Title = "Select saved file";
             string directory = Path.GetDirectoryName(fileName);
             string ext = Path.GetExtension(fileName);
             string name = Path.GetFileNameWithoutExtension(fileName);
             dlg.InitialDirectory = directory;
-            dlg.FileName = name + ".formatted" + ext;
+            dlg.FileName = name + tag + ext;
             if (ext.ToLower().Equals(".tcx")) {
                 dlg.Filter = "TCX|*.tcx";
             } else if (ext.ToLower().Equals(".gpx")) {
@@ -107,7 +107,7 @@ namespace Exercise_Analyzer {
         public static void getSingleFileInfo(MainForm mainForm) {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "GPX and TCX|*.gpx;*.tcx|GPX|*.gpx|TCX|*.tcx";
-            dlg.Title = "Select file for info";
+            dlg.Title = "Select files for info";
             dlg.Multiselect = true;
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 if (dlg.FileNames == null) {
@@ -145,6 +145,40 @@ namespace Exercise_Analyzer {
                 }
             } else {
                 Utils.errMsg("Not supported extension: " + ext);
+                return;
+            }
+        }
+
+        public static void recalculateTcx(MainForm mainForm) {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "TCX|*.tcx";
+            dlg.Title = "Select files to recalculate";
+            dlg.Multiselect = true;
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg.FileNames == null) {
+                    Utils.warnMsg("Failed to open files to process");
+                    return;
+                }
+                string[] fileNames = dlg.FileNames;
+                foreach (string fileName in fileNames) {
+                    recalculateTcx(fileName, mainForm);
+                }
+            }
+        }
+
+        public static void recalculateTcx(string fileName, MainForm mainForm) {
+            try {
+                TrainingCenterDatabase tcx = ExerciseData.recalculateTcx(fileName);
+                string saveFileName = getSaveName(fileName, ".recalculated");
+                if (saveFileName != null) {
+                    tcx.Save(saveFileName);
+                    mainForm.writeInfo(NL + "Recalculated " + fileName + NL
+                        + "  Output is" + saveFileName);
+                } else {
+                    return;
+                }
+            } catch (Exception ex) {
+                Utils.excMsg("Error recalculating TCX", ex);
                 return;
             }
         }

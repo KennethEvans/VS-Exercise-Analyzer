@@ -58,6 +58,8 @@
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.singleFileInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.recalculateTCXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -308,6 +310,8 @@
             this.formatTCXGPXToolStripMenuItem,
             this.formatXMLToolStripMenuItem,
             this.toolStripSeparator5,
+            this.recalculateTCXToolStripMenuItem,
+            this.toolStripSeparator6,
             this.singleFileInfoToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(99, 48);
@@ -361,6 +365,18 @@
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
             this.toolStripSeparator5.Size = new System.Drawing.Size(393, 6);
+            // 
+            // recalculateTCXToolStripMenuItem
+            // 
+            this.recalculateTCXToolStripMenuItem.Name = "recalculateTCXToolStripMenuItem";
+            this.recalculateTCXToolStripMenuItem.Size = new System.Drawing.Size(396, 46);
+            this.recalculateTCXToolStripMenuItem.Text = "Recalculate TCX...";
+            this.recalculateTCXToolStripMenuItem.Click += new System.EventHandler(this.tools_RecalculateTcx_click);
+            // 
+            // toolStripSeparator6
+            // 
+            this.toolStripSeparator6.Name = "toolStripSeparator6";
+            this.toolStripSeparator6.Size = new System.Drawing.Size(393, 6);
             // 
             // MainForm
             // 
@@ -420,6 +436,8 @@
         private System.Windows.Forms.ToolStripMenuItem formatXMLToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem singleFileInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
+        private System.Windows.Forms.ToolStripMenuItem recalculateTCXToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
     }
 }
 

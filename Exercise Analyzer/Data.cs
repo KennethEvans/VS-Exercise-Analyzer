@@ -19,8 +19,19 @@ using www.topografix.com.GPX_1_1;
 namespace Exercise_Analyzer {
     public class ExerciseData {
         public static readonly String NL = Environment.NewLine;
+        /// <summary>
+        /// Used for StartTimeRounded.
+        /// </summary>
         public const int START_TIME_THRESHOLD_SECONDS = 300;
+        /// <summary>
+        /// Used for calculating SpeedAvgMoving.
+        /// </summary>
         public static readonly double NO_MOVE_SPEED = GpsUtils.NO_MOVE_SPEED;
+        /// <summary>
+        /// Emiprically determined factor to make Polar distances match.
+        /// </summary>
+        public static readonly double POLAR_DISTANCE_FACTOR = 1.002;
+
 
         public string FileName { get; set; }
         public int NTracks { get; set; }
@@ -254,7 +265,7 @@ namespace Exercise_Analyzer {
             DateTime time;
             int hr, cad;
 
-            //// Loop over activities
+            // Loop over activities
             activityList = tcx.Activities.Activity;
             nAct = 0;
             foreach (Activity_t activity in activityList) {
@@ -267,7 +278,6 @@ namespace Exercise_Analyzer {
                 nLaps = 0;
                 lapList = activity.Lap;
                 foreach (ActivityLap_t lap in lapList) {
-                    Console.WriteLine("Lap (Track) " + nLaps);
                     nLaps++;
                     // Loop over tracks
                     trackList = lap.Track;
@@ -723,6 +733,233 @@ namespace Exercise_Analyzer {
             eleValsList, hrValsList, hrTimeValsList, nTrks, nSegs, nTpts, nHr);
             return data;
         }
+
+        /// <summary>
+        /// Used to recalculate items in the Polar TCX files if the tracks have
+        /// been modified.  This is very definitely Polar-specific.
+        /// Polar StartTime is (usuallly) 1 sec before the first trckpoint
+        /// time and the duration is 1 sec longer.
+        /// Polar does not write DistanceMeters if there was no change in
+        /// distance.  This mehod writes it always.
+        /// There is a correction factor applied to distances.  This is 
+        /// empirical.  The actual correction factor needed varies slightly.
+        /// See POLAR_DISTANCE_FACTOR for the value used.
+        /// Since Polar Beat does not make more than one Activity, Lap, and 
+        /// Track per file, the logic for more laps o tracks (segments) is
+        /// not tested.
+        /// The MaxSpeed is typically much greater than in the Polar files.
+        /// A speed calculation that does some sort of low pass filter is 
+        /// probably needed as the data are noisy.  The same is true for
+        /// elevation.  This method does not treat elevation as Polar Beat does
+        /// not collect elevation data.
+        /// In the end this calculationis probably a waste of time since the TCX
+        /// parameters that are corrected can be calculated from the track data.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static TrainingCenterDatabase recalculateTcx(string fileName) {
+            ExerciseData data = new ExerciseData();
+            data.FileName = fileName;
+
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(fileName);
+
+            IList<Activity_t> activityList;
+            IList<ActivityLap_t> lapList;
+            IList<Track_t> trackList;
+            IList<Trackpoint_t> trackpointList;
+
+            Position_t position;
+
+            List<long> timeValsList = new List<long>();
+            List<long> speedTimeValsList = new List<long>();
+            List<Double> speedValsList = new List<double>();
+            List<double> eleValsList = new List<double>();
+            List<long> hrTimeValsList = new List<long>();
+            List<double> hrValsList = new List<double>();
+            double prevLat = 0, prevLon = 0;
+            long startTime = long.MaxValue;
+            long endTime = 0;
+            double deltaLength, speed;
+            double prevTime = -1;
+            double deltaTime;
+
+            int nAct = 0, nLaps = 0, nSegs = 0, nTpts = 0, nHr = 0;
+            double lat, lon, ele, distance = 0, hrSum = 0;
+            DateTime time;
+            int hr, cad;
+
+            // Loop over activities
+            activityList = tcx.Activities.Activity;
+            nAct = 0;
+            foreach (Activity_t activity in activityList) {
+                Console.WriteLine("Activity " + nAct);
+                nAct++;
+                if (activity.Creator != null && activity.Creator.Name != null) {
+                    data.Creator = activity.Creator.Name;
+                }
+                // Loop over laps (are like tracks in GPX)
+                nLaps = 0;
+                lapList = activity.Lap;
+                foreach (ActivityLap_t lap in lapList) {
+                    nLaps++;
+                    // Reset the lists (Is different from processTcx)
+                    timeValsList = new List<long>();
+                    speedTimeValsList = new List<long>();
+                    speedValsList = new List<double>();
+                    eleValsList = new List<double>();
+                    hrTimeValsList = new List<long>();
+                    hrValsList = new List<double>();
+                    // Loop over tracks
+                    trackList = lap.Track;
+                    nSegs = 0;
+                    foreach (Track_t trk in trackList) {
+                        nSegs++;
+                        // Loop over trackpoints
+                        nTpts = 0;
+                        trackpointList = trk.Trackpoint;
+                        foreach (Trackpoint_t tpt in trackpointList) {
+                            nTpts++;
+                            lat = lon = ele = Double.NaN;
+                            hr = 0;
+                            time = DateTime.MinValue;
+                            if (tpt.Position != null) {
+                                position = tpt.Position;
+                                lat = position.LatitudeDegrees;
+                                lon = position.LongitudeDegrees;
+                            } else {
+                                lat = lon = Double.NaN;
+                            }
+                            if (tpt.AltitudeMeters != null) {
+                                ele = tpt.AltitudeMeters.Value;
+                            } else {
+                                ele = Double.NaN;
+                            }
+                            if (tpt.Time != null) {
+                                // Fix for bad times in Polar GPX
+                                time = tpt.Time.ToUniversalTime();
+                                if (time.Ticks < startTime) {
+                                    startTime = time.Ticks;
+                                }
+                                if (time.Ticks > endTime) {
+                                    endTime = time.Ticks;
+                                }
+                                timeValsList.Add(time.Ticks);
+                            }
+                            if (tpt.HeartRateBpm != null) {
+                                hr = tpt.HeartRateBpm.Value;
+                            } else {
+                                hr = 0;
+                            }
+                            if (tpt.Cadence != null) {
+                                cad = tpt.Cadence.Value;
+                            } else {
+                                cad = 0;
+                            }
+                            // Process
+                            if (time != DateTime.MinValue) {
+                                if (data.StartTime == DateTime.MinValue) {
+                                    data.StartTime = time;
+                                }
+                                data.EndTime = time;
+                            }
+                            if (!Double.IsNaN(lat) && !Double.IsNaN(lon)) {
+                                if (Double.IsNaN(data.LatStart)) {
+                                    data.LatStart = lat;
+                                    data.LonStart = lon;
+                                }
+                                if (lat > data.LatMax) data.LatMax = lat;
+                                if (lat < data.LatMin) data.LatMin = lat;
+                                if (lon > data.LonMax) data.LonMax = lon;
+                                if (lon < data.LonMin) data.LonMin = lon;
+                                if (prevTime != -1) {
+                                    // Should be the second track point
+                                    deltaLength = GpsUtils.greatCircleDistance(
+                                        prevLat, prevLon, lat, lon);
+                                    distance += deltaLength;
+                                    if (true && tpt.DistanceMeters != null) {
+                                        // This is the accumulated distance
+                                        tpt.DistanceMeters = POLAR_DISTANCE_FACTOR * distance;
+                                    }
+                                    deltaTime = time.Ticks - prevTime;
+                                    speed = deltaTime > 0
+                                        ? TimeSpan.TicksPerSecond * deltaLength / deltaTime
+                                        : 0;
+                                    // Convert from m/sec to mi/hr
+                                    speedValsList.Add(speed);
+                                    speedTimeValsList
+                                        .Add(time.Ticks - (long)Math.Round(.5 * deltaTime));
+                                    if (Double.IsNaN(ele)) eleValsList.Add(0.0);
+                                } else {
+                                    if (true && tpt.DistanceMeters != null) {
+                                        tpt.DistanceMeters = 0;
+                                    }
+                                }
+                                prevTime = time.Ticks;
+                                prevLat = lat;
+                                prevLon = lon;
+                            }
+                            if (!Double.IsNaN(ele)) {
+                                if (Double.IsNaN(data.EleStart)) {
+                                    data.EleStart = ele;
+                                }
+                                if (ele > data.EleMax) data.EleMax = ele;
+                                if (ele < data.EleMin) data.EleMin = ele;
+                                eleValsList.Add(ele);
+                            }
+                            if (hr > 0) {
+                                if (time != DateTime.MinValue) {
+                                    if (data.HrStartTime == DateTime.MinValue) {
+                                        data.HrStartTime = time;
+                                    }
+                                    data.HrEndTime = time;
+                                    hrSum += hr;
+                                    nHr++;
+                                    hrValsList.Add((double)hr);
+                                    hrTimeValsList.Add(time.Ticks);
+                                }
+                            }
+                        }  // End of trackpoints
+                    }  // End of tracks (segments)
+                       // Get lap data (Note this accumulates over tracks (segments))
+                       // Do this here instead of at end as for processTcx
+                    data.Distance = distance;
+                    data.processValues(timeValsList, speedValsList, speedTimeValsList,
+                    eleValsList, hrValsList, hrTimeValsList, nLaps, nSegs, nTpts, nHr);
+                    // Required
+                    lap.DistanceMeters = POLAR_DISTANCE_FACTOR * data.Distance;
+                    // Corrected to match Polar convention.
+                    lap.TotalTimeSeconds = data.Duration.TotalSeconds + 1;
+                    // Corrected to match Polar convention.
+                    lap.StartTime = data.StartTime.AddSeconds(-1).ToUniversalTime();
+                    // Optional
+                    if (true && lap.AverageHeartRateBpm != null) {
+                        lap.AverageHeartRateBpm.Value = (byte)Math.Round(data.HrAvg);
+                    }
+                    if (true && lap.MaximumHeartRateBpm != null) {
+                        lap.MaximumHeartRateBpm.Value = (byte)data.HrMax;
+                    }
+                    if (true && lap.MaximumSpeed != null) {
+                        // Assume m/sec
+                        lap.MaximumSpeed = data.SpeedMax / POLAR_DISTANCE_FACTOR;
+                    }
+                    // AverageSpeed is an extension
+                    if (lap.Extensions != null) {
+                        XElement element = (XElement)lap.Extensions;
+                        if (element != null) {
+                            foreach (XElement elem in from item in element.Descendants()
+                                                      select item) {
+                                if (elem.Name.LocalName == "AvgSpeed") {
+                                    // Assume m/sec
+                                    elem.Value = $"{data.SpeedAvg / POLAR_DISTANCE_FACTOR}";
+                                }
+                            }
+                        }
+                    }
+                }  // End of laps
+            } // End of activities
+            return tcx;
+        }
+
 
         private void processValues(List<long> timeValsList,
         List<double> speedValsList, List<long> speedTimeValsList,

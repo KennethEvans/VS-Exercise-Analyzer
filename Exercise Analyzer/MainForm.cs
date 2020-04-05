@@ -648,6 +648,10 @@ namespace Exercise_Analyzer {
         private void tools_SingleFileInfo_click(object sender, EventArgs e) {
             getSingleFileInfo(this);
         }
+
+        private void tools_RecalculateTcx_click(object sender, EventArgs e) {
+            recalculateTcx(this);
+        }
     }
 
     public class Breakdown {

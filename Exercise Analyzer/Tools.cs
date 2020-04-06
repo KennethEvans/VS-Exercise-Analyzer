@@ -195,6 +195,8 @@ namespace Exercise_Analyzer {
                     return;
                 }
                 tcxFile = dlg1.FileName;
+            } else {
+                return;
             }
             OpenFileDialog dlg2 = new OpenFileDialog();
             dlg2.Filter = "GPX|*.gpx";

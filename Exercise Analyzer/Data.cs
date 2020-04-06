@@ -29,6 +29,7 @@ namespace Exercise_Analyzer {
         /// Emiprically determined factor to make Polar distances match.
         /// </summary>
         public static readonly double POLAR_DISTANCE_FACTOR = 1.002;
+        public static string TimeFormatUTC { get; } = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'";
 
 
         public string FileName { get; set; }
@@ -1560,7 +1561,8 @@ namespace Exercise_Analyzer {
         /// </summary>
         /// <param name="fileName"></param>
         public void setLocationAndCategoryFromFileName(string fileName) {
-            if (Creator == null) return;
+            if (String.IsNullOrEmpty(fileName) ||
+                String.IsNullOrEmpty(fileName)) return;
             // Polar
             if (Creator.ToLower().Contains("polar")) {
                 string name = Path.GetFileNameWithoutExtension(fileName);

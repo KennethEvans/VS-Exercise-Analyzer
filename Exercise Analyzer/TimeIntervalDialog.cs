@@ -3,8 +3,6 @@ using System.Windows.Forms;
 
 namespace Exercise_Analyzer {
     public partial class TimeIntervalDialog : Form {
-        //private readonly string TIME_FORMAT = "yyyy'-'MM'-'dd HH':'mm':'ss'.'fff'Z'";
-        private readonly string TIME_FORMAT = "u";
         public TimeIntervalDialog() {
             InitializeComponent();
         }
@@ -45,7 +43,7 @@ namespace Exercise_Analyzer {
             }
             set
             {
-                textBoxStartDate.Text = value.ToString(TIME_FORMAT);
+                textBoxStartDate.Text = value.ToString(ExerciseData.TimeFormatUTC);
             }
         }
 
@@ -61,7 +59,7 @@ namespace Exercise_Analyzer {
             }
             set
             {
-                textBoxEndDate.Text = value.ToString(TIME_FORMAT);
+                textBoxEndDate.Text = value.ToString(ExerciseData.TimeFormatUTC);
             }
         }
 

@@ -173,12 +173,69 @@ namespace Exercise_Analyzer {
                 if (saveFileName != null) {
                     tcx.Save(saveFileName);
                     mainForm.writeInfo(NL + "Recalculated " + fileName + NL
-                        + "  Output is" + saveFileName);
+                        + "  Output is " + saveFileName);
                 } else {
                     return;
                 }
             } catch (Exception ex) {
                 Utils.excMsg("Error recalculating TCX", ex);
+                return;
+            }
+        }
+
+        public static void interpolateTcxFromGpx(MainForm mainForm) {
+            string tcxFile = null, gpxFile = null;
+            OpenFileDialog dlg1 = new OpenFileDialog();
+            dlg1.Filter = "TCX|*.tcx";
+            dlg1.Title = "Select TCX file to interpolate to.";
+            dlg1.Multiselect = false;
+            if (dlg1.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg1.FileName == null) {
+                    Utils.warnMsg("Failed to open file to interpolate to");
+                    return;
+                }
+                tcxFile = dlg1.FileName;
+            }
+            OpenFileDialog dlg2 = new OpenFileDialog();
+            dlg2.Filter = "GPX|*.gpx";
+            dlg2.Title = "Select GPX file to interpolate from.";
+            dlg2.Multiselect = false;
+            if (dlg2.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg2.FileName == null) {
+                    Utils.warnMsg("Failed to open GPX file to interpolate from");
+                    return;
+                }
+                gpxFile = dlg2.FileName;
+                interpolateTcxFromGpx(tcxFile, gpxFile, mainForm);
+            }
+        }
+
+        public static void interpolateTcxFromGpx(string tcxFile, string gpxFile,
+            MainForm mainForm) {
+            try {
+                TcxResult res =
+                    ExerciseData.interpolateTcxFromGpx(tcxFile, gpxFile);
+                if (res.TCX == null) {
+                    Utils.errMsg("Interpolate Tcx From Gpx failed:" + NL
+                        + "for " + Path.GetFileName(tcxFile) + NL
+                        + " and " + Path.GetFileName(gpxFile) + NL
+                        + res.Message);
+                    return;
+                }
+                TrainingCenterDatabase tcxInterp = res.TCX;
+
+                string saveFileName = getSaveName(tcxFile, ".interpolated");
+                if (saveFileName != null) {
+                    tcxInterp.Save(saveFileName);
+                    mainForm.writeInfo(NL + "Recalculated " + tcxFile + NL
+                        + "  from " + gpxFile + NL
+                        + "  Output is " + saveFileName
+                        + NL + "  " + res.Message);
+                } else {
+                    return;
+                }
+            } catch (Exception ex) {
+                Utils.excMsg("Error interpolating TCX from GPX", ex);
                 return;
             }
         }

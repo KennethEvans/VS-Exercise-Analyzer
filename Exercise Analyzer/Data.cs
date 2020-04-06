@@ -1,11 +1,10 @@
 ﻿#define convertTimeToUTC
 #undef debugging
+#undef interpVerbose
 
-#if debugging
-using System.Diagnostics;
-#endif
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -243,7 +242,9 @@ namespace Exercise_Analyzer {
             // Get Author info
             if (tcx.Author != null) {
                 AbstractSource_t author = tcx.Author;
-                Console.WriteLine("author=" + author.Name);
+#if debugging
+                Debug.WriteLine("author=" + author.Name);
+#endif
             }
 
             List<long> timeValsList = new List<long>();
@@ -269,7 +270,9 @@ namespace Exercise_Analyzer {
             activityList = tcx.Activities.Activity;
             nAct = 0;
             foreach (Activity_t activity in activityList) {
-                Console.WriteLine("Activity " + nAct);
+#if debugging
+               Debug.WriteLine("Activity " + nAct);
+#endif
                 nAct++;
                 if (activity.Creator != null && activity.Creator.Name != null) {
                     data.Creator = activity.Creator.Name;
@@ -755,13 +758,13 @@ namespace Exercise_Analyzer {
         /// In the end this calculationis probably a waste of time since the TCX
         /// parameters that are corrected can be calculated from the track data.
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="tcx: The TCX to process."></param>
         /// <returns></returns>
-        public static TrainingCenterDatabase recalculateTcx(string fileName) {
+        public static TrainingCenterDatabase recalculateTcx(string tcxFile,
+            TrainingCenterDatabase tcx) {
+            if (tcx == null) return null;
             ExerciseData data = new ExerciseData();
-            data.FileName = fileName;
-
-            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(fileName);
+            data.FileName = tcxFile;
 
             IList<Activity_t> activityList;
             IList<ActivityLap_t> lapList;
@@ -792,7 +795,9 @@ namespace Exercise_Analyzer {
             activityList = tcx.Activities.Activity;
             nAct = 0;
             foreach (Activity_t activity in activityList) {
-                Console.WriteLine("Activity " + nAct);
+#if debugging
+                Debug.WriteLine("Activity " + nAct);
+#endif
                 nAct++;
                 if (activity.Creator != null && activity.Creator.Name != null) {
                     data.Creator = activity.Creator.Name;
@@ -960,12 +965,358 @@ namespace Exercise_Analyzer {
             return tcx;
         }
 
+        public static TrainingCenterDatabase recalculateTcx(string fileName) {
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(fileName);
+            return recalculateTcx(fileName, tcx);
+        }
 
+        /// <summary>
+        /// Interpolates the lat lon values from the GPX interpFile to the
+        /// TCX inputFile and saves the result to the outputFile.
+        /// Only processes the fist activity, lap, and track.
+        /// </summary>
+        /// <param name="tcxFile">Original file</param>
+        /// <param name="gpxFile">File with lat lon to interpolate</param>
+        public static TcxResult interpolateTcxFromGpx(string tcxFile,
+        string gpxFile) {
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(tcxFile);
+            gpx gpxType = gpx.Load(gpxFile);
+            if (tcx.Activities == null) {
+                return new TcxResult(null, "No avtivities");
+            }
+
+            // Prompt for time interval
+            ExerciseData data = processTcx2(tcxFile);
+            DateTime start = data.StartTime.ToUniversalTime();
+            DateTime end = data.EndTime.ToUniversalTime();
+            TimeIntervalDialog dlg = new TimeIntervalDialog();
+            dlg.Title = "Time Interval";
+            dlg.Label = "Time Interval for Finding Lat/Lon Matches";
+            dlg.StartDate = start;
+            dlg.EndDate = end;
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                start = dlg.StartDate.ToUniversalTime();
+                end = dlg.EndDate.ToUniversalTime();
+            } else {
+                return new TcxResult(null, "Canceled");
+            }
+
+            IList<trkType> tracks = gpxType.trk;
+
+            IList<Activity_t> activityList1;
+            IList<ActivityLap_t> lapList1;
+            IList<Track_t> trackList1;
+            IList<Trackpoint_t> trackpointList1;
+
+            Position_t position;
+            int nActs, nLaps, nTrks, nTkpts;
+            double lat, lon, dist, totalDist;
+
+            // Process interp file (GPX)
+            List<LatLon> latLonList = new List<LatLon>();
+            IList<trkType> tracks1 = gpxType.trk;
+
+            nTrks = nTkpts = 0;
+            totalDist = 0;
+            foreach (trkType trk in tracks1) {
+#if debugging
+                Debug.WriteLine("Track: " + nTrks++);
+#endif
+                foreach (trksegType seg in trk.trkseg) {
+#if debugging
+                   Debug.WriteLine("Segment: " + nSeg++);
+#endif
+                    nTrks = 0;
+                    bool first = true;
+                    double latPrev = 0, lonPrev = 0;
+                    dist = 0;
+                    foreach (wptType wpt in seg.trkpt) {
+                        nTkpts++;
+                        lat = (double)wpt.lat;
+                        lon = (double)wpt.lon;
+                        if (!first) {
+                            dist = GpsUtils.greatCircleDistance(lat, lon, latPrev, lonPrev);
+                            totalDist += dist;
+                        }
+                        latLonList.Add(new LatLon(lat, lon, totalDist));
+                        first = false;
+                        latPrev = lat;
+                        lonPrev = lon;
+                    }
+                }
+            }
+            int nInterp = latLonList.Count;
+            if (nInterp < 2) {
+                return new TcxResult(null, "Interpolation file has only "
+                    + nInterp + " items");
+            }
+            LatLon latLonFirst = latLonList[0];
+            LatLon latLonLast = latLonList[nInterp - 1];
+
+            // Process tcx file
+            nActs = nLaps = nTrks = nTkpts = 0;
+            double distFirst = Double.MaxValue, distLast = Double.MaxValue;
+            LatLon latLonFirstMatch = null;
+            LatLon latLonLastMatch = null;
+            int indexFirstLatLon = -1;
+            int indexFirst = -1;
+            int indexLast = -1;
+            DateTime timeFirst = DateTime.MinValue;
+            DateTime timeLast = DateTime.MinValue;
+            // Loop over activities
+            activityList1 = tcx.Activities.Activity;
+            foreach (Activity_t activity in activityList1) {
+#if debugging
+                Debug.WriteLine("Activity " + nActs);
+#endif
+                nActs++;
+                if (nActs > 1) {
+                    // Only the first Activity is processed
+                    continue;
+                }
+                // Loop over laps (are like tracks in GPX)
+                nLaps = 0;
+                lapList1 = activity.Lap;
+                foreach (ActivityLap_t lap in lapList1) {
+#if debugging
+                    Debug.WriteLine("Lap (Track) " + nLaps);
+#endif
+                    nLaps++;
+                    if (nLaps > 1) {
+                        // Only the first Lap is processed
+                        continue;
+                    }
+                    // Loop over tracks
+                    trackList1 = lap.Track;
+                    nTrks = 0;
+                    foreach (Track_t trk in trackList1) {
+                        nTrks++;
+                        if (nTrks > 1) {
+                            // Only the first track is processed
+                            continue;
+                        }
+                        // Loop over trackpoints
+                        nTkpts = 0;
+                        trackpointList1 = trk.Trackpoint;
+                        foreach (Trackpoint_t tpt in trackpointList1) {
+                            if (tpt.Time == null) continue;
+                            Debug.WriteLine("start=" + start);
+                            Debug.WriteLine("end=" + end);
+                            Debug.WriteLine("time=" + tpt.Time);
+                            Debug.WriteLine("time (UTC)=" + tpt.Time.ToUniversalTime());
+                            Debug.WriteLine("compare=" + DateTime.Compare(tpt.Time.ToUniversalTime(), start));
+                            if (DateTime.Compare(tpt.Time.ToUniversalTime(), start) < 0) {
+                                continue;
+                            }
+                            if (DateTime.Compare(tpt.Time.ToUniversalTime(), end) > 0) {
+                                continue;
+                            }
+                            nTkpts++;
+                            if (tpt.Position != null) {
+                                position = tpt.Position;
+                                lat = position.LatitudeDegrees;
+                                lon = position.LongitudeDegrees;
+#if interpVerbose
+                                Debug.WriteLine(trackpointList1.IndexOf(tpt)
+                                   + " lat=" + lat + " lon=" + lon + " time=" + tpt.Time);
+#endif
+                                if (indexFirstLatLon < 0) indexFirstLatLon = trackpointList1.IndexOf(tpt);
+                            } else {
+#if interpVerbose
+
+                                Debug.WriteLine(trackpointList1.IndexOf(tpt) +
+                                    " Warning: No Position for input activity="
+                                    + nActs + " lap=" + nLaps + " trk=" + nTrks
+                                    + " tkpt=" + nTkpts);
+#endif
+                                continue;
+                            }
+                            // Find first match to first lat lon in interp
+                            dist = GpsUtils.greatCircleDistance(lat, lon, latLonFirst.Lat, latLonFirst.Lon);
+                            if (dist < distFirst) {
+                                distFirst = dist;
+                                latLonFirstMatch = new LatLon(lat, lon, 0, tpt.Time);
+                                indexFirst = trackpointList1.IndexOf(tpt);
+                                timeFirst = tpt.Time;
+                            }
+                            // Find last match to last lat lon in interp
+                            dist = GpsUtils.greatCircleDistance(lat, lon, latLonLast.Lat, latLonLast.Lon);
+                            if (dist <= distLast) {
+                                distLast = dist;
+                                latLonLastMatch = new LatLon(lat, lon, 0.0, tpt.Time);
+                                indexLast = trackpointList1.IndexOf(tpt);
+                                timeLast = tpt.Time;
+                            }
+                        }
+                    }
+                }
+            }
+            double firstDist = latLonList[0].Distance;
+            double lastDist = latLonList[latLonList.Count - 1].Distance;
+#if debugging
+            Debug.WriteLine("latLonFirst: lat="
+                + latLonFirst.Lat + " lon=" + latLonFirst.Lon);
+            Debug.WriteLine("latLonLast: lat="
+                + latLonLast.Lat + " lon=" + latLonLast.Lon);
+            Debug.WriteLine("firstDist=" + firstDist + " m lastDist=" + lastDist + " m");
+#endif
+            if (indexFirst < 0) {
+                return new TcxResult(null,
+                    "Did not find a match to the first item in interpolation file");
+            }
+            if (indexLast < 0) {
+                return new TcxResult(null,
+                    "Did not find a match to the last item in interpolation file");
+            }
+            if (indexFirst == indexLast) {
+#if interpVerbose
+                Debug.WriteLine("Warning: Match to first and last item is the same point");
+#endif
+            }
+            if (indexFirst > indexLast) {
+#if interpVerbose
+                Debug.WriteLine("Did not find a match for the" +
+                    " first item before the one for the last item");
+                Debug.WriteLine("  Therefore using index where first lat lon values were specified: "
+                    + indexFirstLatLon);
+#endif
+                indexFirst = indexFirstLatLon;
+            }
+#if interpVerbose
+            Debug.WriteLine("Matching from index " + indexFirst + " to " + indexLast);
+#endif 
+            // Loop over these indices
+            Activity_t activity0 = activityList1[0];
+            ActivityLap_t lap0 = activity0.Lap[0];
+            Track_t trk0 = lap0.Track[0];
+            Trackpoint_t tpt0;
+            long firstTime = trk0.Trackpoint[indexFirst].Time.Ticks;
+            long lastTime = trk0.Trackpoint[indexLast].Time.Ticks;
+            long deltaTime = lastTime - firstTime;
+            double speed = TimeSpan.TicksPerSecond * totalDist / deltaTime;
+#if debugging
+            Debug.WriteLine("TotalDist=" + $"{GpsUtils.M2MI * totalDist:f2}"
+                + " mi Duration=" + new TimeSpan(deltaTime)
+                + " Speed=" + $"{GpsUtils.M2MI / GpsUtils.SEC2HR * speed:f2}"
+                + " mph");
+#endif
+            for (int i = indexFirst; i <= indexLast; i++) {
+                tpt0 = trk0.Trackpoint[i];
+                if (tpt0.Position == null) {
+#if interpVerbose
+                    Debug.WriteLine(i +
+                        " Warning: No Position for tkpt=" + nTkpts + "skipping");
+#endif
+                    continue;
+                }
+                long thisTime = tpt0.Time.Ticks - firstTime;
+                double latInterp = 0, lonInterp = 0;
+                long time0, time1;
+                double val0, val1, deltaVal, deltaDist, distInterp;
+                // Assume dist is proportional to time
+                dist = totalDist * thisTime / deltaTime;
+                if (dist == 0) {
+                    latInterp = latLonList[0].Lat;
+                    lonInterp = latLonList[0].Lon;
+#if debugging
+                    Debug.WriteLine(i + " latInterp=" + $"{latInterp:f8}"
+                        + " lonInterp=" + $"{lonInterp:f8}"
+                        + " dist=" + $"{dist:f4}"
+                    );
+#endif
+                } else {
+                    // Linearly interpolate
+                    for (int j = 1; j < latLonList.Count; j++) {
+                        if (dist > latLonList[j].Distance) continue;
+                        time0 = latLonList[j - 1].Time.Ticks;
+                        time1 = latLonList[j].Time.Ticks;
+                        distInterp = dist - latLonList[j - 1].Distance;
+                        deltaDist = latLonList[j].Distance - latLonList[j - 1].Distance;
+                        val0 = latLonList[j - 1].Lat;
+                        val1 = latLonList[j].Lat;
+                        deltaVal = val1 - val0;
+                        latInterp = val0;
+                        if (deltaVal != 0) {
+                            latInterp = val0 + distInterp * deltaVal / deltaDist;
+                        }
+                        val0 = latLonList[j - 1].Lon;
+                        val1 = latLonList[j].Lon;
+                        deltaVal = val1 - val0;
+                        lonInterp = val0;
+                        if (deltaVal != 0) {
+                            lonInterp = val0 + distInterp * deltaVal / deltaDist;
+                        }
+#if debugging
+                        Debug.WriteLine(i + " latInterp =" + $"{latInterp:f8}"
+                            + " j=" + j
+                            + " lonInterp=" + $"{lonInterp:f8}"
+                            + " deltaVal=" + $"{deltaVal:f8}"
+                            + " distInterp=" + $"{distInterp:f4}"
+                            + " deltaDist=" + $"{deltaDist:f4}");
+#endif
+                        // Don't do any more
+                        break;
+                    }
+#if interpVerbose
+                   if (latInterp == 0 || lonInterp == 0) {
+                        Debug.WriteLine(i + " Not found"
+                            + " dist=" + $"{dist:f4}"
+                            + " m firstDist=" + $"{firstDist:f4}"
+                            + " m lastDist=" + $"{lastDist:f4}"
+                            + " m");
+                    }
+#endif
+                }
+                position = tpt0.Position;
+#if debugging
+                Debug.WriteLine(i + " Before: "
+                    + " LatitudeDegrees=" + position.LatitudeDegrees
+                    + " LongitudeDegrees=" + position.LongitudeDegrees
+                    + " latInterp=" + latInterp
+                    + " lonInterp=" + lonInterp);
+#endif
+                position.LatitudeDegrees = latInterp;
+                position.LongitudeDegrees = lonInterp;
+#if debugging
+                Debug.WriteLine(i + " After: "
+                    + " LatitudeDegrees=" + position.LatitudeDegrees
+                    + " LongitudeDegrees=" + position.LongitudeDegrees);
+#endif
+            }
+            TrainingCenterDatabase txcRecalculate = recalculateTcx(tcxFile, tcx);
+            string msg = "Matched from trackpoint " + indexFirst + " to " + indexLast
+                + " [" + timeFirst.ToUniversalTime().ToString("u")
+                + " to " + timeLast.ToUniversalTime().ToString("u") + "]"
+                + NL + "  Distance=" + $"{GpsUtils.M2MI * totalDist:f2}" + " mi"
+                + " Duration=" + new TimeSpan(deltaTime)
+                + " Speed=" + $"{GpsUtils.M2MI / GpsUtils.SEC2HR * speed:f2}"
+                + " mph";
+            return new TcxResult(tcx, msg);
+        }
+
+        /// <summary>
+        /// Calculates paramters from array of data collected during parsing. 
+        /// The techniques uses match those in Exercise Viewer.  Speed and 
+        /// elevation could be handled ber by doing some sort of low pass
+        /// filter, such as moving average.  Statistics are for a whole session,
+        /// not per lap (track), track (segment), nor per activity, as for 
+        /// Exercise Viewer.
+        /// </summary>
+        /// <param name="timeValsList"></param>
+        /// <param name="speedValsList"></param>
+        /// <param name="speedTimeValsList"></param>
+        /// <param name="eleValsList"></param>
+        /// <param name="hrValsList"></param>
+        /// <param name="hrTimeValsList"></param>
+        /// <param name="nTracks"></param>
+        /// <param name="nSegments"></param>
+        /// <param name="nTrackPoints"></param>
+        /// <param name="nHrValues"></param>
         private void processValues(List<long> timeValsList,
-        List<double> speedValsList, List<long> speedTimeValsList,
-        List<double> eleValsList,
-        List<double> hrValsList, List<long> hrTimeValsList,
-        int nTracks, int nSegments, int nTrackPoints, int nHrValues) {
+            List<double> speedValsList, List<long> speedTimeValsList,
+            List<double> eleValsList,
+            List<double> hrValsList, List<long> hrTimeValsList,
+            int nTracks, int nSegments, int nTrackPoints, int nHrValues) {
 #if debugging
             // DEBUG
             Debug.WriteLine("speedTimeValsList");
@@ -1090,6 +1441,11 @@ namespace Exercise_Analyzer {
             }
         }
 
+        /// <summary>
+        /// Gets the Location and Category from the file name, using my formats
+        /// for Polar Beat and the standard format from SportsTrackLive.
+        /// </summary>
+        /// <param name="fileName"></param>
         public void setLocationAndCategoryFromFileName(string fileName) {
             if (Creator == null) return;
             // Polar
@@ -1149,35 +1505,13 @@ namespace Exercise_Analyzer {
             }
         }
 
-#if false
         /// <summary>
-        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
+        /// Gets the time for the loaction of the exercise.  Requires GeoTimeZone,
+        /// TimeZoneConvertor, and TimeZoneNames.
         /// </summary>
         /// <param name="lat"></param>
         /// <param name="lon"></param>
-        /// <param name="utcDate"></param>
         /// <returns></returns>
-        public static DateTime GetDateTimeForLocation(double lat, double lon, DateTime utcDate) {
-            TimeZoneInfo tzInfo = GetTimeZoneInfoForLocation(lat, lon);
-            DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzInfo);
-            return convertedTime;
-        }
-
-        /// <summary>
-        /// Uses Geo Time Zone and Time Zone Converter NuGet packages.
-        /// </summary>
-        /// <param name="lat"></param>
-        /// <param name="lon"></param>
-        /// <param name="utcDate"></param>
-        /// <returns></returns>
-        public static TimeZoneInfo GetTimeZoneInfoForLocation(double lat, double lon) {
-            string tzIana = TimeZoneLookup.GetTimeZone(lat, lon).Result;
-            string tzId = TZConvert.IanaToWindows(tzIana);
-            TimeZoneInfo tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-            return tzInfo;
-        }
-#endif
-
         public static string getTimeZoneIdForLocation(double lat, double lon) {
             string tzIana = TimeZoneLookup.GetTimeZone(lat, lon).Result;
             string tzId = TZConvert.IanaToWindows(tzIana);
@@ -1241,15 +1575,13 @@ namespace Exercise_Analyzer {
             return info;
         }
 
-        /**
-         * Gets the statistics from the given values and time values by averaging
-         * over the values, not over the actual time.
-         * 
-         * @param vals
-         * @param timeVals
-         * @return {min, max, avg} or null on error.
-         */
-
+        ///
+        /// Gets the statistics from the given values and time values by averaging
+        /// over the values, not over the actual time.
+        /// 
+        /// @param vals
+        /// @param timeVals
+        /// @return {min, max, avg} or null on error.
         public static double[] getSimpleStats(double[] vals, long[] timeVals,
             double omitBelow) {
             // System.out.println("vals: " + vals.Length + ", timeVals: "
@@ -1288,14 +1620,13 @@ namespace Exercise_Analyzer {
             return new double[] { min, max, sum };
         }
 
-        /**
-         * Gets the statistics from the given values and time values by averaging
-         * over the values weighted by the time.
-         * 
-         * @param vals
-         * @param timeVals
-         * @return {min, max, avg} or null on error.
-         */
+        ///
+        /// Gets the statistics from the given values and time values by averaging
+        /// over the values weighted by the time.
+        /// 
+        /// @param vals
+        /// @param timeVals
+        /// @return {min, max, avg} or null on error.
         public static double[] getTimeAverageStats(double[] vals, long[] timeVals,
             double omitBelow) {
             // System.out.println("vals: " + vals.length + ", timeVals: "
@@ -1356,14 +1687,13 @@ namespace Exercise_Analyzer {
             return new double[] { min, max, sum };
         }
 
-        /**
-         * Gets the elevation statistics from the given values and time values.
-         * These include elevation gain and loss.
-         * 
-         * @param vals
-         * @param timeVals
-         * @return {gain, loss} or null on error.
-         */
+        ///
+        /// Gets the elevation statistics from the given values and time values.
+        /// These include elevation gain and loss.
+        /// 
+        /// @param vals
+        /// @param timeVals
+        /// @return {gain, loss} or null on error.
         public static double[] getEleStats(double[] vals, long[] timeVals) {
             // System.out.println("vals: " + vals.Length + ", timeVals: "
             // + timeVals.Length);
@@ -1551,6 +1881,36 @@ namespace Exercise_Analyzer {
             {
                 return Path.GetExtension(FileName).ToLower() == ".gpx";
             }
+        }
+    }
+
+    public class LatLon {
+        public double Lat { get; set; }
+        public double Lon { get; set; }
+        public double Distance { get; set; }
+        public DateTime Time { get; set; }
+
+        public LatLon(double lat, double lon, double distance) {
+            Lat = lat;
+            Lon = lon;
+            Distance = distance;
+        }
+
+        public LatLon(double lat, double lon, double distance, DateTime time) {
+            Lat = lat;
+            Lon = lon;
+            Distance = distance;
+            Time = time;
+        }
+    }
+
+    public class TcxResult {
+        public TrainingCenterDatabase TCX { get; set; }
+        public string Message { get; set; }
+
+        public TcxResult(TrainingCenterDatabase tcx, string message) {
+            this.TCX = tcx;
+            this.Message = message;
         }
     }
 }

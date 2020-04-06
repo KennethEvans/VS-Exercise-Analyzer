@@ -652,6 +652,10 @@ namespace Exercise_Analyzer {
         private void tools_RecalculateTcx_click(object sender, EventArgs e) {
             recalculateTcx(this);
         }
+
+        private void tools_InterpolateTcx_click(object sender, EventArgs e) {
+            interpolateTcxFromGpx(this);
+        }
     }
 
     public class Breakdown {

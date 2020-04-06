@@ -121,6 +121,12 @@
     <Compile Include="ScrolledHTMLDialog.designer.cs">
       <DependentUpon>ScrolledHTMLDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="TimeIntervalDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TimeIntervalDialog.Designer.cs">
+      <DependentUpon>TimeIntervalDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Tools.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -149,6 +155,9 @@
     </Compile>
     <EmbeddedResource Include="ScrolledHTMLDialog.resx">
       <DependentUpon>ScrolledHTMLDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TimeIntervalDialog.resx">
+      <DependentUpon>TimeIntervalDialog.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="App.manifest" />
     <None Include="packages.config" />

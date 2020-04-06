@@ -187,7 +187,7 @@ namespace Exercise_Analyzer {
             string tcxFile = null, gpxFile = null;
             OpenFileDialog dlg1 = new OpenFileDialog();
             dlg1.Filter = "TCX|*.tcx";
-            dlg1.Title = "Select TCX file to interpolate to.";
+            dlg1.Title = "Select TCX file to interpolate to";
             dlg1.Multiselect = false;
             if (dlg1.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 if (dlg1.FileName == null) {
@@ -198,7 +198,7 @@ namespace Exercise_Analyzer {
             }
             OpenFileDialog dlg2 = new OpenFileDialog();
             dlg2.Filter = "GPX|*.gpx";
-            dlg2.Title = "Select GPX file to interpolate from.";
+            dlg2.Title = "Select GPX file to interpolate from";
             dlg2.Multiselect = false;
             if (dlg2.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 if (dlg2.FileName == null) {
@@ -239,5 +239,47 @@ namespace Exercise_Analyzer {
                 return;
             }
         }
+
+        public static void deleteTcxTrackpoints(MainForm mainForm) {
+            string tcxFile = null;
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "TCX|*.tcx";
+            dlg.Title = "Select TCX file to delete trackpoints from";
+            dlg.Multiselect = false;
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg.FileName == null) {
+                    Utils.warnMsg("Failed to open file to delete trackpoints from");
+                    return;
+                }
+                tcxFile = dlg.FileName;
+                deleteTcxTrackpoints(tcxFile, mainForm);
+            }
+        }
+
+        public static void deleteTcxTrackpoints(string tcxFile, MainForm mainForm) {
+            try {
+                TcxResult res =
+                    ExerciseData.deleteTcxTrackpoints(tcxFile);
+                if (res.TCX == null) {
+                    Utils.errMsg("Delete trackpoints from TCX failed:" + NL
+                        + "for " + Path.GetFileName(tcxFile) + NL
+                        + res.Message);
+                    return;
+                }
+                string saveFileName = getSaveName(tcxFile, ".trimmed");
+                if (saveFileName != null) {
+                    res.TCX.Save(saveFileName);
+                    mainForm.writeInfo(NL + "Trimmed " + tcxFile + NL
+                        + "  Output is " + saveFileName
+                        + NL + "  " + res.Message);
+                } else {
+                    return;
+                }
+            } catch (Exception ex) {
+                Utils.excMsg("Error trackpoints from TCX", ex);
+                return;
+            }
+        }
+
     }
 }

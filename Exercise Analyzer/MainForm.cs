@@ -656,6 +656,10 @@ namespace Exercise_Analyzer {
         private void tools_InterpolateTcx_click(object sender, EventArgs e) {
             interpolateTcxFromGpx(this);
         }
+
+        private void tools_DeleteTcxTrackpoints_click(object sender, EventArgs e) {
+            deleteTcxTrackpoints(this);
+        }
     }
 
     public class Breakdown {

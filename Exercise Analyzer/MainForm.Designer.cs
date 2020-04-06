@@ -59,9 +59,9 @@
             this.singleFileInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.recalculateTCXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.interpolateTCXFromGPXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.deleteTCXTrackpointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -313,7 +313,7 @@
             this.formatXMLToolStripMenuItem,
             this.toolStripSeparator5,
             this.recalculateTCXToolStripMenuItem,
-            this.toolStripSeparator6,
+            this.deleteTCXTrackpointsToolStripMenuItem,
             this.interpolateTCXFromGPXToolStripMenuItem,
             this.toolStripSeparator7,
             this.singleFileInfoToolStripMenuItem});
@@ -377,11 +377,6 @@
             this.recalculateTCXToolStripMenuItem.Text = "Recalculate TCX...";
             this.recalculateTCXToolStripMenuItem.Click += new System.EventHandler(this.tools_RecalculateTcx_click);
             // 
-            // toolStripSeparator6
-            // 
-            this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(489, 6);
-            // 
             // interpolateTCXFromGPXToolStripMenuItem
             // 
             this.interpolateTCXFromGPXToolStripMenuItem.Name = "interpolateTCXFromGPXToolStripMenuItem";
@@ -393,6 +388,13 @@
             // 
             this.toolStripSeparator7.Name = "toolStripSeparator7";
             this.toolStripSeparator7.Size = new System.Drawing.Size(489, 6);
+            // 
+            // deleteTCXTrackpointsToolStripMenuItem
+            // 
+            this.deleteTCXTrackpointsToolStripMenuItem.Name = "deleteTCXTrackpointsToolStripMenuItem";
+            this.deleteTCXTrackpointsToolStripMenuItem.Size = new System.Drawing.Size(492, 46);
+            this.deleteTCXTrackpointsToolStripMenuItem.Text = "Delete TCX Trackpoints...";
+            this.deleteTCXTrackpointsToolStripMenuItem.Click += new System.EventHandler(this.tools_DeleteTcxTrackpoints_click);
             // 
             // MainForm
             // 
@@ -453,9 +455,9 @@
         private System.Windows.Forms.ToolStripMenuItem singleFileInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem recalculateTCXToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.ToolStripMenuItem interpolateTCXFromGPXToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
+        private System.Windows.Forms.ToolStripMenuItem deleteTCXTrackpointsToolStripMenuItem;
     }
 }
 

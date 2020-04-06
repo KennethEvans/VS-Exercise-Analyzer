@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -1100,11 +1099,13 @@ namespace Exercise_Analyzer {
                         trackpointList1 = trk.Trackpoint;
                         foreach (Trackpoint_t tpt in trackpointList1) {
                             if (tpt.Time == null) continue;
+#if debugging
                             Debug.WriteLine("start=" + start);
                             Debug.WriteLine("end=" + end);
                             Debug.WriteLine("time=" + tpt.Time);
                             Debug.WriteLine("time (UTC)=" + tpt.Time.ToUniversalTime());
                             Debug.WriteLine("compare=" + DateTime.Compare(tpt.Time.ToUniversalTime(), start));
+#endif
                             if (DateTime.Compare(tpt.Time.ToUniversalTime(), start) < 0) {
                                 continue;
                             }
@@ -1184,7 +1185,7 @@ namespace Exercise_Analyzer {
             }
 #if interpVerbose
             Debug.WriteLine("Matching from index " + indexFirst + " to " + indexLast);
-#endif 
+#endif
             // Loop over these indices
             Activity_t activity0 = activityList1[0];
             ActivityLap_t lap0 = activity0.Lap[0];
@@ -1283,6 +1284,8 @@ namespace Exercise_Analyzer {
                     + " LongitudeDegrees=" + position.LongitudeDegrees);
 #endif
             }
+
+            // Recalculate parameters
             TrainingCenterDatabase txcRecalculate = recalculateTcx(tcxFile, tcx);
             string msg = "Matched from trackpoint " + indexFirst + " to " + indexLast
                 + " [" + timeFirst.ToUniversalTime().ToString("u")
@@ -1291,6 +1294,116 @@ namespace Exercise_Analyzer {
                 + " Duration=" + new TimeSpan(deltaTime)
                 + " Speed=" + $"{GpsUtils.M2MI / GpsUtils.SEC2HR * speed:f2}"
                 + " mph";
+            return new TcxResult(tcx, msg);
+        }
+
+        public static TcxResult deleteTcxTrackpoints(string tcxFile) {
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(tcxFile);
+            if (tcx.Activities == null) {
+                return new TcxResult(null, "No avtivities");
+            }
+
+            // Prompt for time interval
+            ExerciseData data = processTcx2(tcxFile);
+            DateTime start = data.StartTime.ToUniversalTime();
+            DateTime end = data.EndTime.ToUniversalTime();
+            TimeIntervalDialog dlg = new TimeIntervalDialog();
+            dlg.Title = "Time Interval";
+            dlg.Label = "Time Interval for Deleting Trackpoints";
+            dlg.StartDate = start;
+            dlg.EndDate = end;
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                start = dlg.StartDate.ToUniversalTime();
+                end = dlg.EndDate.ToUniversalTime();
+            } else {
+                return new TcxResult(null, "Canceled");
+            }
+
+            IList<Activity_t> activityList;
+            IList<ActivityLap_t> lapList;
+            IList<Track_t> trackList;
+            IList<Trackpoint_t> trackpointList;
+            IList<Trackpoint_t> deleteList = new List<Trackpoint_t>();
+
+            int nActs, nLaps, nTrks, nTkpts;
+
+            nActs = nLaps = nTrks = nTkpts = 0;
+            int indexFirst = -1;
+            int indexLast = -1;
+            DateTime timeFirst = DateTime.MinValue;
+            DateTime timeLast = DateTime.MinValue;
+            // Loop over activities
+            activityList = tcx.Activities.Activity;
+            foreach (Activity_t activity in activityList) {
+#if debugging
+                Debug.WriteLine("Activity " + nActs);
+#endif
+                nActs++;
+                if (nActs > 1) {
+                    // Only the first Activity is processed
+                    continue;
+                }
+                // Loop over laps (are like tracks in GPX)
+                nLaps = 0;
+                lapList = activity.Lap;
+                foreach (ActivityLap_t lap in lapList) {
+#if debugging
+                    Debug.WriteLine("Lap (Track) " + nLaps);
+#endif
+                    nLaps++;
+                    if (nLaps > 1) {
+                        // Only the first Lap is processed
+                        continue;
+                    }
+                    // Loop over tracks
+                    trackList = lap.Track;
+                    nTrks = 0;
+                    foreach (Track_t trk in trackList) {
+                        nTrks++;
+                        if (nTrks > 1) {
+                            // Only the first track is processed
+                            continue;
+                        }
+                        // Loop over trackpoints
+                        nTkpts = 0;
+                        trackpointList = trk.Trackpoint;
+                        foreach (Trackpoint_t tpt in trackpointList) {
+                            if (tpt.Time == null) continue;
+#if debugging
+                            Debug.WriteLine("start=" + start);
+                            Debug.WriteLine("end=" + end);
+                            Debug.WriteLine("time=" + tpt.Time);
+                            Debug.WriteLine("time (UTC)=" + tpt.Time.ToUniversalTime());
+                            Debug.WriteLine("compare=" + DateTime.Compare(tpt.Time.ToUniversalTime(), start));
+#endif
+                            if (DateTime.Compare(tpt.Time.ToUniversalTime(), start) < 0) {
+                                continue;
+                            }
+                            if (DateTime.Compare(tpt.Time.ToUniversalTime(), end) > 0) {
+                                continue;
+                            }
+                            nTkpts++;
+                            if (indexFirst == -1) {
+                                indexFirst = trackpointList.IndexOf(tpt);
+                                timeFirst = tpt.Time.ToUniversalTime();
+                            }
+                            indexLast = trackpointList.IndexOf(tpt);
+                            timeLast = tpt.Time;
+                            deleteList.Add(tpt);
+                        } // End of Trackpoints
+                        // Remove the ones in the deleteList
+                        foreach (Trackpoint_t tpt in deleteList) {
+                            trackpointList.Remove(tpt);
+                        }
+                    }  // End of tracks
+                }  // End of laps
+            }  // End of activities
+
+            // Recalculate parameters
+            TrainingCenterDatabase txcRecalculate = recalculateTcx(tcxFile, tcx);
+            string msg = "Deleted from trackpoint " + indexFirst + " to " + indexLast
+                + " [" + timeFirst.ToUniversalTime().ToString("u")
+                + " to " + timeLast.ToUniversalTime().ToString("u") + "]";
             return new TcxResult(tcx, msg);
         }
 

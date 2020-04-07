@@ -129,7 +129,7 @@ namespace Exercise_Analyzer {
             }
             if (ext.ToLower().Equals(".tcx")) {
                 try {
-                    ExerciseData data = ExerciseData.processTcx2(fileName);
+                    ExerciseData data = ExerciseData.processTcx(fileName);
                     mainForm.writeInfo(NL + data.info());
                 } catch (Exception ex) {
                     Utils.excMsg("Error getting TCX single file info", ex);
@@ -137,7 +137,7 @@ namespace Exercise_Analyzer {
                 }
             } else if (ext.ToLower().Equals(".gpx")) {
                 try {
-                    ExerciseData data = ExerciseData.processGpx2(fileName);
+                    ExerciseData data = ExerciseData.processGpx(fileName);
                     mainForm.writeInfo(NL + data.info());
                 } catch (Exception ex) {
                     Utils.excMsg("Error getting GPX single file info", ex);

@@ -70,7 +70,7 @@ namespace Exercise_Analyzer {
         public int HrMax { get; set; } = Int32.MinValue;
         public int HrMin { get; set; } = Int32.MaxValue;
 
-        public static ExerciseData processTcx(string fileName) {
+        public static ExerciseData processTcx0(string fileName) {
             ExerciseData data = new ExerciseData();
             data.FileName = fileName;
 
@@ -404,7 +404,7 @@ namespace Exercise_Analyzer {
             return data;
         }
 
-        public static ExerciseData processGpx(string fileName) {
+        public static ExerciseData processGpx0(string fileName) {
             ExerciseData data = new ExerciseData();
             data.FileName = fileName;
 
@@ -596,9 +596,22 @@ namespace Exercise_Analyzer {
                 if (metaData.author != null) {
                     // Handle author;
                 }
+                // STL has location and category in the metadata
+                if (metaData.Untyped != null) {
+                    XElement element = (XElement)metaData.Untyped;
+                    foreach (XElement elem in from item in element.Descendants()
+                                              select item) {
+                        if (elem.Name.LocalName == "category") {
+                            data.Category = (string)elem;
+                        }
+                        if (elem.Name.LocalName == "location") {
+                            data.Location = (string)elem;
+                        }
+                    }
+                }
             }
 
-            IList<trkType> tracks = gpxType.trk;
+                IList<trkType> tracks = gpxType.trk;
             extensionsType extensions;
             IEnumerable<XElement> extensionElements;
 
@@ -1603,7 +1616,7 @@ namespace Exercise_Analyzer {
                     Location += " " + tokens[i];
                 }
             }
-            // Polar
+            // STL
             if (Creator.ToLower().Contains("sportstracklive")
                 && String.IsNullOrEmpty(Category) && String.IsNullOrEmpty(Location)) {
                 string name = Path.GetFileNameWithoutExtension(fileName);
@@ -1617,6 +1630,10 @@ namespace Exercise_Analyzer {
                 }
                 Category = tokens[3];
                 Location = tokens[4];
+                // The rest minus the last are other terms in the Location.
+                for(int i = 5; i < nTokens-1; i++) {
+                    Location += " " + tokens[i];
+                }
             }
         }
 

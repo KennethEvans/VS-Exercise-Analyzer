@@ -59,10 +59,10 @@ namespace Exercise_Analyzer {
                     }
                     if (ext.ToLower().Equals(".gpx")) {
                         app.writeInfo(NL + "Processing " + fileName);
-                        data = ExerciseData.processGpx(fileName);
+                        data = ExerciseData.processGpx2(fileName);
                     } else if (ext.ToLower().Equals(".tcx")) {
                         app.writeInfo(NL + "Processing " + fileName);
-                        data = ExerciseData.processTcx(fileName);
+                        data = ExerciseData.processTcx2(fileName);
                     }
                     if (data == null) {
                         writeInfo("Failed to process " + fileName);

@@ -807,7 +807,6 @@ namespace Exercise_Analyzer {
                                 if (indexFirstLatLon < 0) indexFirstLatLon = trackpointList1.IndexOf(tpt);
                             } else {
 #if interpVerbose
-
                                 Debug.WriteLine(trackpointList1.IndexOf(tpt) +
                                     " Warning: No Position for input activity="
                                     + nActs + " lap=" + nLaps + " trk=" + nTrks

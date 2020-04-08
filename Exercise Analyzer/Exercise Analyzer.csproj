@@ -188,6 +188,9 @@
     <Content Include="Help\Screenshot.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Include="..\README.md">
+      <Link>README.md</Link>
+    </None>
     <None Include="Resources\logoPictureBox.Image.bmp" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -659,6 +660,14 @@ namespace Exercise_Analyzer {
 
         private void tools_DeleteTcxTrackpoints_click(object sender, EventArgs e) {
             deleteTcxTrackpoints(this);
+        }
+
+        private void help_OverviewOnline_click(object sender, EventArgs e) {
+            try {
+                Process.Start("https://kenevans.net/opensource/ExerciseAnalyzer/Help/Overview.html");
+            } catch(Exception ex) {
+                Utils.excMsg("Failed to start browser", ex);
+            }
         }
     }
 

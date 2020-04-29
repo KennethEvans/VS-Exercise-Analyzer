@@ -1437,12 +1437,16 @@ namespace Exercise_Analyzer {
                 info += "TimeZone: " + "Not defined" + NL;
             } else {
                 TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(TZId);
+                string standardName = tzi.StandardName;
+                string daylightName = tzi.DaylightName;
+                TimeSpan baseUtcOffset = tzi.BaseUtcOffset;
+                TimeSpan utcOffset = tzi.GetUtcOffset(StartTime);
                 TimeZoneValues abbrs = TZNames.GetAbbreviationsForTimeZone(tzi.Id, "en-US");
-                info += "TimeZone: " + tzi
-                    + " " + (tzi.IsDaylightSavingTime(StartTime) ?
-                    abbrs.Daylight : abbrs.Standard) + NL;
+                info += "TimeZone: " + (tzi.IsDaylightSavingTime(StartTime) ?
+                    daylightName : standardName) + " (UTC" + utcOffset + ")"
+                    + NL;
+                info += "TimeZoneInfoFromLatLon: " + TZInfoFromLatLon + NL;
             }
-            info += "TimeZoneInfoFromLatLon: " + TZInfoFromLatLon + NL;
             info += "Start Time: " + StartTime + " End Time: " + EndTime + NL;
             info += "Duration: " + Duration + NL;
             info += "Distance: " + String.Format("{0:f2} mi", GpsUtils.M2MI * Distance) + NL;

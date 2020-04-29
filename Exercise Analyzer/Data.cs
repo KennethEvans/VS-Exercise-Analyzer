@@ -1337,6 +1337,11 @@ namespace Exercise_Analyzer {
             // Polar
             if (Creator.ToLower().Contains("polar")) {
                 string name = Path.GetFileNameWithoutExtension(fileName);
+                // Only process up to the first dot
+                int index = name.IndexOf(".");
+                if (index != -1) {
+                    name = name.Substring(0, index);
+                }
                 string[] tokens = name.Split('_');
 
                 if (tokens.Length < 4) {
@@ -1378,6 +1383,11 @@ namespace Exercise_Analyzer {
             if (Creator.ToLower().Contains("sportstracklive")
                 && String.IsNullOrEmpty(Category) && String.IsNullOrEmpty(Location)) {
                 string name = Path.GetFileNameWithoutExtension(fileName);
+                // Only process up to the first dot
+                int index = name.IndexOf(".");
+                if (index != -1) {
+                    name = name.Substring(0, index);
+                }
                 string[] tokens = name.Split('-');
                 int nTokens = tokens.Length;
                 if (nTokens < 6) {
@@ -1396,7 +1406,7 @@ namespace Exercise_Analyzer {
         }
 
         /// <summary>
-        /// Gets the time for the loaction of the exercise.  Requires GeoTimeZone,
+        /// Gets the time for the location of the exercise.  Requires GeoTimeZone,
         /// TimeZoneConvertor, and TimeZoneNames.
         /// </summary>
         /// <param name="lat"></param>

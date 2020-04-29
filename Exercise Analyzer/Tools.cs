@@ -283,5 +283,49 @@ namespace Exercise_Analyzer {
             }
         }
 
+        public static void fixPolarGpx(MainForm mainForm) {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "GPX|*.gpx";
+            dlg.Title = "Select GPX files to fix";
+            dlg.Multiselect = true;
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg.FileNames == null) {
+                    Utils.warnMsg("Failed to open files to fix");
+                    return;
+                }
+                string[] fileNames = dlg.FileNames;
+                foreach (string fileName in fileNames) {
+                    fixPolarGpx(fileName, mainForm);
+                }
+            }
+        }
+
+        public static void fixPolarGpx(string gpxFile, MainForm mainForm) {
+            try {
+                GpxResult res =
+                    ExerciseData.fixPolarGpx(gpxFile);
+                if (res.GPX == null) {
+                    Utils.errMsg("Fixing GPX failed:" + NL
+                        + "for " + Path.GetFileName(gpxFile) + NL
+                        + res.Message);
+                    return;
+                }
+                if(res.Message.StartsWith("Unmodified")) {
+                    mainForm.writeInfo(NL + "Did not change " + gpxFile + NL);
+                    return;
+                }
+                // Overwrite the existing file and restore the modified time
+                DateTime lastModifiedTime = File.GetLastWriteTime(gpxFile);
+                res.GPX.Save(gpxFile);
+                File.SetLastWriteTime(gpxFile, lastModifiedTime);
+                mainForm.writeInfo(NL + "Overwrote " + gpxFile + NL
+                    +  res.Message);
+            } catch (Exception ex) {
+                Utils.excMsg("Error fixing Gpx for " + gpxFile, ex);
+                return;
+            }
+        }
+
+
     }
 }

@@ -662,10 +662,21 @@ namespace Exercise_Analyzer {
             deleteTcxTrackpoints(this);
         }
 
+        private void tools_FixPolarGpx_click(object sender, EventArgs e) {
+            string msg = "Existing files will be overwritten with the fixed version."
+                + NL + "The modified time will be retained.";
+            DialogResult res = MessageBox.Show(msg + "\n" + "OK to continue?",
+              "Warning", MessageBoxButtons.YesNo);
+            if (res == DialogResult.No) {
+                return;
+            }
+            fixPolarGpx(this);
+        }
+
         private void help_OverviewOnline_click(object sender, EventArgs e) {
             try {
                 Process.Start("https://kenevans.net/opensource/ExerciseAnalyzer/Help/Overview.html");
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 Utils.excMsg("Failed to start browser", ex);
             }
         }

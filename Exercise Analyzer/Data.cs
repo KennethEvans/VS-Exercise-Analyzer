@@ -280,7 +280,7 @@ namespace Exercise_Analyzer {
                 }
             }
 
-                IList<trkType> tracks = gpxType.trk;
+            IList<trkType> tracks = gpxType.trk;
             extensionsType extensions;
             IEnumerable<XElement> extensionElements;
 
@@ -664,7 +664,7 @@ namespace Exercise_Analyzer {
             TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(tcxFile);
             gpx gpxType = gpx.Load(gpxFile);
             if (tcx.Activities == null) {
-                return new TcxResult(null, "No avtivities");
+                return new TcxResult(null, "No activities");
             }
 
             // Prompt for time interval
@@ -1089,6 +1089,96 @@ namespace Exercise_Analyzer {
             return new TcxResult(tcx, msg);
         }
 
+        public static GpxResult fixPolarGpx(string gpxFile) {
+            gpx gpxType = gpx.Load(gpxFile);
+            ExerciseData data = processGpx(gpxFile);
+            bool modified = false;
+            bool modifiedTime = false;
+            string fixedItems = "";
+
+            // Only handle the case where there is metadata because currently
+            // there is no way to determine Category and Location from the name
+            // except for Polar and STL files, which do have metadata
+            if (gpxType.metadata != null) {
+                metadataType metaData = gpxType.metadata;
+                // STL has location and category in the metadata
+                if (metaData.Untyped != null) {
+                    XElement element = (XElement)metaData.Untyped;
+                    // This probably isn't the right thing to do, but it mimics
+                    // what STL does.  Better would be to have a namespace for
+                    // this element
+                    XNamespace ns = element.GetDefaultNamespace();
+                    bool categoryFound = false;
+                    bool locationFound = false;
+                    foreach (XElement elem in from item in element.Descendants()
+                                              select item) {
+                        if (elem.Name.LocalName == "category") {
+                            categoryFound = true;
+                        }
+                        if (elem.Name.LocalName == "location") {
+                            locationFound = true;
+                        }
+                    }
+                    if (!locationFound && !String.IsNullOrEmpty(data.Location)) {
+                        XElement newElem = new XElement(ns + "location", data.Location);
+                        element.Add(newElem);
+                        fixedItems += " Location";
+                        modified = true;
+                    }
+                    if (!categoryFound && !String.IsNullOrEmpty(data.Category)) {
+                        XElement newElem = new XElement(ns + "category", data.Category);
+                        element.Add(newElem);
+                        fixedItems += " Category";
+                        modified = true;
+                    }
+                }
+            }
+
+            // Process bad timestamps
+            TimeZoneInfo tzi = null;
+            if (data.TZId != null) {
+                tzi = TimeZoneInfo.FindSystemTimeZoneById(data.TZId);
+            }
+            IList<trkType> tracks = gpxType.trk;
+            long timeTicks, utcTimeTicks;
+            foreach (trkType trk in tracks) {
+                foreach (trksegType seg in trk.trkseg) {
+                    foreach (wptType wpt in seg.trkpt) {
+                        if (wpt.time != null) {
+                            // Fix for bad times in Polar GPX
+                            timeTicks = wpt.time.Value.Ticks;
+                            utcTimeTicks = wpt.time.Value.ToUniversalTime().Ticks;
+                            if (timeTicks != utcTimeTicks) {
+                                if (tzi != null) {
+                                    wpt.time = TimeZoneInfo.ConvertTimeToUtc(wpt.time.Value, tzi);
+                                    if (!modifiedTime) {
+                                        modified = true;
+                                        modifiedTime = true;
+                                        fixedItems += " Time";
+                                    }
+                                } else {
+                                    if (!modifiedTime) {
+                                        modified = true;
+                                        modifiedTime = true;
+                                        fixedItems += " Time(Failed)";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!modified) return new GpxResult(gpxType, "Unmodified");
+            if (fixedItems.StartsWith(", ")) {
+                fixedItems = fixedItems.Substring(2);
+            }
+            string msg = "  Fixed:" + fixedItems;
+            if (String.IsNullOrEmpty(fixedItems)) {
+                msg = "  Fixed: None";
+            }
+            return new GpxResult(gpxType, msg);
+        }
         /// <summary>
         /// Calculates paramters from array of data collected during parsing. 
         /// The techniques uses match those in Exercise Viewer.  Speed and 
@@ -1299,7 +1389,7 @@ namespace Exercise_Analyzer {
                 Category = tokens[3];
                 Location = tokens[4];
                 // The rest minus the last are other terms in the Location.
-                for(int i = 5; i < nTokens-1; i++) {
+                for (int i = 5; i < nTokens - 1; i++) {
                     Location += " " + tokens[i];
                 }
             }
@@ -1710,6 +1800,16 @@ namespace Exercise_Analyzer {
 
         public TcxResult(TrainingCenterDatabase tcx, string message) {
             this.TCX = tcx;
+            this.Message = message;
+        }
+    }
+
+    public class GpxResult {
+        public gpx GPX { get; set; }
+        public string Message { get; set; }
+
+        public GpxResult(gpx gpx, string message) {
+            this.GPX = gpx;
             this.Message = message;
         }
     }

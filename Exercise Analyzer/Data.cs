@@ -1432,7 +1432,7 @@ namespace Exercise_Analyzer {
             info += "Creator: " + Creator + NL;
             info += "Category: " + Category + NL;
             info += "Location: " + Location + NL;
-            info += "NTracks=" + NTracks + " Nsegments=" + NSegments
+            info += "NTracks=" + NTracks + " NSegments=" + NSegments
                 + " NTrackPoints=" + NTrackPoints + NL;
             if (TZId == null) {
                 info += "TimeZone: " + "Not defined" + NL;
@@ -1460,8 +1460,6 @@ namespace Exercise_Analyzer {
                 String.Format(hrFormat, HrAvg, HrMin, HrMax) :
                 "Heart Rate: No heart rate data") + NL;
 
-            info += "NTracks= " + NTracks + " Nsegments=" + NSegments
-                + " NTrackPoints=" + NTrackPoints + NL;
             string eleFormat = "Elevation: Start={0:f0} Min={1:f0} Max={2:f0} Gain={3:f0} Loss={4:f0} ft";
             info += (!Double.IsNaN(EleStart) ?
                     String.Format(eleFormat, GpsUtils.M2MI * EleStart,

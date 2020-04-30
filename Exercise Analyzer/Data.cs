@@ -13,6 +13,9 @@ using TimeZoneConverter;
 using TimeZoneNames;
 using www.garmin.com.xmlschemas.TrainingCenterDatabase.v2;
 using www.topografix.com.GPX_1_1;
+#if debugging
+using System.Diagnostics;
+#endif
 
 namespace Exercise_Analyzer {
     public class ExerciseData {
@@ -30,7 +33,7 @@ namespace Exercise_Analyzer {
         /// </summary>
         public static readonly double POLAR_DISTANCE_FACTOR = 1.002;
         public static string TimeFormatUTC { get; } = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'";
-
+        public enum InterpolateMode { MatchLatLon, UseInterval }
 
         public string FileName { get; set; }
         public int NTracks { get; set; }
@@ -113,7 +116,7 @@ namespace Exercise_Analyzer {
             nAct = 0;
             foreach (Activity_t activity in activityList) {
 #if debugging
-               Debug.WriteLine("Activity " + nAct);
+                Debug.WriteLine("Activity " + nAct);
 #endif
                 nAct++;
                 if (activity.Creator != null && activity.Creator.Name != null) {
@@ -661,7 +664,7 @@ namespace Exercise_Analyzer {
         /// <param name="tcxFile">Original file</param>
         /// <param name="gpxFile">File with lat lon to interpolate</param>
         public static TcxResult interpolateTcxFromGpx(string tcxFile,
-        string gpxFile) {
+        string gpxFile, InterpolateMode mode) {
             TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(tcxFile);
             gpx gpxType = gpx.Load(gpxFile);
             if (tcx.Activities == null) {
@@ -686,28 +689,29 @@ namespace Exercise_Analyzer {
 
             IList<trkType> tracks = gpxType.trk;
 
-            IList<Activity_t> activityList1;
-            IList<ActivityLap_t> lapList1;
-            IList<Track_t> trackList1;
-            IList<Trackpoint_t> trackpointList1;
+            IList<Activity_t> activityList;
+            IList<ActivityLap_t> lapList;
+            IList<Track_t> trackList;
+            IList<Trackpoint_t> trackpointList;
 
             Position_t position;
-            int nActs, nLaps, nTrks, nTkpts;
+            int nActs, nLaps, nTrks, nTkpts, nSegs;
             double lat, lon, dist, totalDist;
 
-            // Process interp file (GPX)
+            // Process interpolation file (GPX)
             List<LatLon> latLonList = new List<LatLon>();
             IList<trkType> tracks1 = gpxType.trk;
 
-            nTrks = nTkpts = 0;
+            nTrks = nSegs = nTkpts = 0;
             totalDist = 0;
             foreach (trkType trk in tracks1) {
 #if debugging
                 Debug.WriteLine("Track: " + nTrks++);
 #endif
                 foreach (trksegType seg in trk.trkseg) {
+                    nSegs++;
 #if debugging
-                   Debug.WriteLine("Segment: " + nSeg++);
+                    Debug.WriteLine("Segment: " + nSegs);
 #endif
                     nTrks = 0;
                     bool first = true;
@@ -747,8 +751,8 @@ namespace Exercise_Analyzer {
             DateTime timeFirst = DateTime.MinValue;
             DateTime timeLast = DateTime.MinValue;
             // Loop over activities
-            activityList1 = tcx.Activities.Activity;
-            foreach (Activity_t activity in activityList1) {
+            activityList = tcx.Activities.Activity;
+            foreach (Activity_t activity in activityList) {
 #if debugging
                 Debug.WriteLine("Activity " + nActs);
 #endif
@@ -759,8 +763,8 @@ namespace Exercise_Analyzer {
                 }
                 // Loop over laps (are like tracks in GPX)
                 nLaps = 0;
-                lapList1 = activity.Lap;
-                foreach (ActivityLap_t lap in lapList1) {
+                lapList = activity.Lap;
+                foreach (ActivityLap_t lap in lapList) {
 #if debugging
                     Debug.WriteLine("Lap (Track) " + nLaps);
 #endif
@@ -770,9 +774,9 @@ namespace Exercise_Analyzer {
                         continue;
                     }
                     // Loop over tracks
-                    trackList1 = lap.Track;
+                    trackList = lap.Track;
                     nTrks = 0;
-                    foreach (Track_t trk in trackList1) {
+                    foreach (Track_t trk in trackList) {
                         nTrks++;
                         if (nTrks > 1) {
                             // Only the first track is processed
@@ -780,14 +784,14 @@ namespace Exercise_Analyzer {
                         }
                         // Loop over trackpoints
                         nTkpts = 0;
-                        trackpointList1 = trk.Trackpoint;
-                        foreach (Trackpoint_t tpt in trackpointList1) {
+                        trackpointList = trk.Trackpoint;
+                        foreach (Trackpoint_t tpt in trackpointList) {
                             if (tpt.Time == null) continue;
 #if debugging
                             Debug.WriteLine("start=" + start);
                             Debug.WriteLine("end=" + end);
                             Debug.WriteLine("time=" + tpt.Time);
-                            Debug.WriteLine("time (UTC)=" + tpt.Time.ToUniversalTime());
+                            Debug.WriteLine("time(UTC)=" + tpt.Time.ToUniversalTime());
                             Debug.WriteLine("compare=" + DateTime.Compare(tpt.Time.ToUniversalTime(), start));
 #endif
                             if (DateTime.Compare(tpt.Time.ToUniversalTime(), start) < 0) {
@@ -797,44 +801,51 @@ namespace Exercise_Analyzer {
                                 continue;
                             }
                             nTkpts++;
-                            if (tpt.Position != null) {
-                                position = tpt.Position;
-                                lat = position.LatitudeDegrees;
-                                lon = position.LongitudeDegrees;
+                            if (mode == InterpolateMode.MatchLatLon) {
+                                if (tpt.Position != null) {
+                                    position = tpt.Position;
+                                    lat = position.LatitudeDegrees;
+                                    lon = position.LongitudeDegrees;
 #if interpVerbose
-                                Debug.WriteLine(trackpointList1.IndexOf(tpt)
-                                   + " lat=" + lat + " lon=" + lon + " time=" + tpt.Time);
+                                    Debug.WriteLine(trackpointList.IndexOf(tpt)
+                                       + " lat=" + lat + " lon=" + lon + " time=" + tpt.Time);
 #endif
-                                if (indexFirstLatLon < 0) indexFirstLatLon = trackpointList1.IndexOf(tpt);
-                            } else {
+                                    if (indexFirstLatLon < 0) indexFirstLatLon = trackpointList.IndexOf(tpt);
+                                } else {
 #if interpVerbose
-                                Debug.WriteLine(trackpointList1.IndexOf(tpt) +
-                                    " Warning: No Position for input activity="
-                                    + nActs + " lap=" + nLaps + " trk=" + nTrks
-                                    + " tkpt=" + nTkpts);
+                                    Debug.WriteLine(trackpointList.IndexOf(tpt) +
+                                        " Warning: No Position for input activity="
+                                        + nActs + " lap=" + nLaps + " trk=" + nTrks
+                                        + " tkpt=" + nTkpts);
 #endif
-                                continue;
+                                    continue;
+                                }
+                                // Find first match to first lat lon in interp
+                                dist = GpsUtils.greatCircleDistance(lat, lon, latLonFirst.Lat, latLonFirst.Lon);
+                                if (dist < distFirst) {
+                                    distFirst = dist;
+                                    latLonFirstMatch = new LatLon(lat, lon, 0, tpt.Time);
+                                    indexFirst = trackpointList.IndexOf(tpt);
+                                    timeFirst = tpt.Time;
+                                }
+                                // Find last match to last lat lon in interp
+                                dist = GpsUtils.greatCircleDistance(lat, lon, latLonLast.Lat, latLonLast.Lon);
+                                if (dist <= distLast) {
+                                    distLast = dist;
+                                    latLonLastMatch = new LatLon(lat, lon, 0.0, tpt.Time);
+                                    indexLast = trackpointList.IndexOf(tpt);
+                                    timeLast = tpt.Time;
+                                }
+                            } else if (mode == InterpolateMode.UseInterval) {
+                                if (indexFirst == -1) {
+                                    indexFirst = trackpointList.IndexOf(tpt);
+                                }
+                                indexLast = trackpointList.IndexOf(tpt);
                             }
-                            // Find first match to first lat lon in interp
-                            dist = GpsUtils.greatCircleDistance(lat, lon, latLonFirst.Lat, latLonFirst.Lon);
-                            if (dist < distFirst) {
-                                distFirst = dist;
-                                latLonFirstMatch = new LatLon(lat, lon, 0, tpt.Time);
-                                indexFirst = trackpointList1.IndexOf(tpt);
-                                timeFirst = tpt.Time;
-                            }
-                            // Find last match to last lat lon in interp
-                            dist = GpsUtils.greatCircleDistance(lat, lon, latLonLast.Lat, latLonLast.Lon);
-                            if (dist <= distLast) {
-                                distLast = dist;
-                                latLonLastMatch = new LatLon(lat, lon, 0.0, tpt.Time);
-                                indexLast = trackpointList1.IndexOf(tpt);
-                                timeLast = tpt.Time;
-                            }
-                        }
-                    }
-                }
-            }
+                        }  // End loop over trackpoints
+                    } // End loop over tracks
+                } // End loop over laps
+            } // End loop over activities
             double firstDist = latLonList[0].Distance;
             double lastDist = latLonList[latLonList.Count - 1].Distance;
 #if debugging
@@ -869,8 +880,9 @@ namespace Exercise_Analyzer {
 #if interpVerbose
             Debug.WriteLine("Matching from index " + indexFirst + " to " + indexLast);
 #endif
+
             // Loop over these indices
-            Activity_t activity0 = activityList1[0];
+            Activity_t activity0 = activityList[0];
             ActivityLap_t lap0 = activity0.Lap[0];
             Track_t trk0 = lap0.Track[0];
             Trackpoint_t tpt0;
@@ -942,7 +954,7 @@ namespace Exercise_Analyzer {
                         break;
                     }
 #if interpVerbose
-                   if (latInterp == 0 || lonInterp == 0) {
+                    if (latInterp == 0 || lonInterp == 0) {
                         Debug.WriteLine(i + " Not found"
                             + " dist=" + $"{dist:f4}"
                             + " m firstDist=" + $"{firstDist:f4}"
@@ -976,7 +988,7 @@ namespace Exercise_Analyzer {
                 + NL + "  Distance=" + $"{GpsUtils.M2MI * totalDist:f2}" + " mi"
                 + " Duration=" + new TimeSpan(deltaTime)
                 + " Speed=" + $"{GpsUtils.M2MI / GpsUtils.SEC2HR * speed:f2}"
-                + " mph";
+                + " mph" + " Mode=" + mode;
             return new TcxResult(tcx, msg);
         }
 

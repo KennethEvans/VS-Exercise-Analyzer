@@ -183,7 +183,7 @@ namespace Exercise_Analyzer {
             }
         }
 
-        public static void interpolateTcxFromGpx(MainForm mainForm) {
+        public static void interpolateTcxFromGpx(MainForm mainForm, ExerciseData.InterpolateMode mode) {
             string tcxFile = null, gpxFile = null;
             OpenFileDialog dlg1 = new OpenFileDialog();
             dlg1.Filter = "TCX|*.tcx";
@@ -208,15 +208,15 @@ namespace Exercise_Analyzer {
                     return;
                 }
                 gpxFile = dlg2.FileName;
-                interpolateTcxFromGpx(tcxFile, gpxFile, mainForm);
+                interpolateTcxFromGpx(tcxFile, gpxFile, mainForm, mode);
             }
         }
 
         public static void interpolateTcxFromGpx(string tcxFile, string gpxFile,
-            MainForm mainForm) {
+            MainForm mainForm, ExerciseData.InterpolateMode mode) {
             try {
                 TcxResult res =
-                    ExerciseData.interpolateTcxFromGpx(tcxFile, gpxFile);
+                    ExerciseData.interpolateTcxFromGpx(tcxFile, gpxFile, mode);
                 if (res.TCX == null) {
                     Utils.errMsg("Interpolate Tcx From Gpx failed:" + NL
                         + "for " + Path.GetFileName(tcxFile) + NL

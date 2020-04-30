@@ -655,7 +655,16 @@ namespace Exercise_Analyzer {
         }
 
         private void tools_InterpolateTcx_click(object sender, EventArgs e) {
-            interpolateTcxFromGpx(this);
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            ExerciseData.InterpolateMode mode;
+            if (item.Text.StartsWith("Match")) {
+                mode = ExerciseData.InterpolateMode.MatchLatLon;
+            } else if (item.Text.StartsWith("Use")) {
+                mode = ExerciseData.InterpolateMode.UseInterval;
+            } else {
+                return;
+            }
+            interpolateTcxFromGpx(this, mode);
         }
 
         private void tools_DeleteTcxTrackpoints_click(object sender, EventArgs e) {

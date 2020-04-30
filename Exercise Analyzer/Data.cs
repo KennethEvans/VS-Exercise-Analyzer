@@ -97,11 +97,9 @@ namespace Exercise_Analyzer {
             List<double> eleValsList = new List<double>();
             List<long> hrTimeValsList = new List<long>();
             List<double> hrValsList = new List<double>();
-            double prevLat = 0, prevLon = 0;
             long startTime = long.MaxValue;
             long endTime = 0;
             double deltaLength, speed;
-            double prevTime = -1;
             double deltaTime;
             long lastTimeValue = -1;
 
@@ -130,6 +128,8 @@ namespace Exercise_Analyzer {
                     trackList = lap.Track;
                     nSegs = 0;
                     foreach (Track_t trk in trackList) {
+                        double prevTime = -1;
+                        double prevLat = 0, prevLon = 0;
                         nSegs++;
                         if (nSegs > 1) {
                             // Use NaN to make a break between segments
@@ -291,11 +291,10 @@ namespace Exercise_Analyzer {
             List<double> eleValsList = new List<double>();
             List<long> hrTimeValsList = new List<long>();
             List<double> hrValsList = new List<double>();
-            double prevLat = 0, prevLon = 0;
+
             long startTime = long.MaxValue;
             long endTime = 0;
             double deltaLength, speed;
-            double prevTime = -1;
             double deltaTime;
             long lastTimeValue = -1;
 
@@ -306,6 +305,8 @@ namespace Exercise_Analyzer {
             foreach (trkType trk in tracks) {
                 nTrks++;
                 foreach (trksegType seg in trk.trkseg) {
+                    double prevTime = -1;
+                    double prevLat = 0, prevLon = 0;
                     nSegs++;
                     if (nSegs > 1) {
                         // Use NaN to make a break between segments
@@ -461,11 +462,9 @@ namespace Exercise_Analyzer {
             List<double> eleValsList = new List<double>();
             List<long> hrTimeValsList = new List<long>();
             List<double> hrValsList = new List<double>();
-            double prevLat = 0, prevLon = 0;
             long startTime = long.MaxValue;
             long endTime = 0;
             double deltaLength, speed;
-            double prevTime = -1;
             double deltaTime;
 
             int nAct = 0, nLaps = 0, nSegs = 0, nTpts = 0, nHr = 0;
@@ -500,6 +499,8 @@ namespace Exercise_Analyzer {
                     trackList = lap.Track;
                     nSegs = 0;
                     foreach (Track_t trk in trackList) {
+                        double prevTime = -1;
+                        double prevLat = 0, prevLon = 0;
                         nSegs++;
                         // Loop over trackpoints
                         nTpts = 0;

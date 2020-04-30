@@ -19,7 +19,7 @@ namespace Exercise_Analyzer {
     public partial class MainForm : Form {
         public static readonly String NL = Environment.NewLine;
         public const string CSV_SEP = ",";
-        public enum Category { Walking, Cycling, Workout, Other }
+        public enum Category { Unknown, Walking, Cycling, Workout, Other }
         private List<ExerciseData> exerciseDataList;
         private const bool processSilent = false;
         private static ScrolledHTMLDialog overviewDlg;
@@ -230,6 +230,10 @@ namespace Exercise_Analyzer {
             // Make a new list of the required information
             List<Breakdown> bdList = new List<Breakdown>();
             foreach (ExerciseData data in exerciseDataList) {
+                if(String.IsNullOrEmpty(data.Category)) {
+                    writeInfo(NL + "createWeeklyReport: No category for " 
+                        + data.FileName);
+                }
                 bdList.Add(new Breakdown(ci, data.StartTime, data.Category,
                     data.Duration, data.Distance));
             }
@@ -702,14 +706,17 @@ namespace Exercise_Analyzer {
             TimeSpan duration, double distance) {
             CI = ci;
             StartTime = startTime;
-            if (category.ToLower().Equals("walking")) {
-                Category = MainForm.Category.Walking;
-            } else if (category.ToLower().Equals("cycling")) {
-                Category = MainForm.Category.Cycling;
-            } else if (category.ToLower().Equals("workout")) {
-                Category = MainForm.Category.Workout;
-            } else {
-                Category = MainForm.Category.Other;
+            Category = MainForm.Category.Unknown;
+            if (!String.IsNullOrEmpty(category)) {
+                if (category.ToLower().Equals("walking")) {
+                    Category = MainForm.Category.Walking;
+                } else if (category.ToLower().Equals("cycling")) {
+                    Category = MainForm.Category.Cycling;
+                } else if (category.ToLower().Equals("workout")) {
+                    Category = MainForm.Category.Workout;
+                } else {
+                    Category = MainForm.Category.Other;
+                }
             }
             Duration = duration;
             Distance = distance;

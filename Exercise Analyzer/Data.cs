@@ -1461,6 +1461,13 @@ namespace Exercise_Analyzer {
                 info += "TimeZoneInfoFromLatLon: " + TZInfoFromLatLon + NL;
             }
             info += "Start Time: " + StartTime + " End Time: " + EndTime + NL;
+            if (TZId != null) {
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(TZId);
+                DateTime startTimeUtc = TimeZoneInfo.ConvertTimeToUtc(StartTime, tzi);
+                DateTime endTimeUtc = TimeZoneInfo.ConvertTimeToUtc(EndTime, tzi);
+                info += "StartTime[UTC]: " +  startTimeUtc.ToString(TimeFormatUTC)
+                    + " End Time[UTC]: " + endTimeUtc.ToString(TimeFormatUTC) + NL;
+            }
             info += "Duration: " + Duration + NL;
             info += "Distance: " + String.Format("{0:f2} mi", GpsUtils.M2MI * Distance) + NL;
             info += "Average Speed: " + String.Format("{0:f2} mi/hr",

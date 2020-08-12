@@ -230,8 +230,8 @@ namespace Exercise_Analyzer {
             // Make a new list of the required information
             List<Breakdown> bdList = new List<Breakdown>();
             foreach (ExerciseData data in exerciseDataList) {
-                if(String.IsNullOrEmpty(data.Category)) {
-                    writeInfo(NL + "createWeeklyReport: No category for " 
+                if (String.IsNullOrEmpty(data.Category)) {
+                    writeInfo(NL + "createWeeklyReport: No category for "
                         + data.FileName);
                 }
                 bdList.Add(new Breakdown(ci, data.StartTime, data.Category,
@@ -400,6 +400,47 @@ namespace Exercise_Analyzer {
             sw.Write(NL);
         }
 
+        public void createCsv(string fileName) {
+            if (exerciseDataList == null) return;
+            string[] csvColumnNames = new string[] {"Category", "Location",
+                "Start", "Finish", "Time Zone", "Distance", "Duration", "Duration(s)",
+                "Avg Speed", "Min HR", "Avg HR", "Max HR"};
+
+            // From https://docs.microsoft.com/en-us/dotnet/api/system.globalization.calendar.getweekofyear?view=netframework-4.8
+            CultureInfo ci = new CultureInfo("en-US");
+            Calendar cal = ci.Calendar;
+            CalendarWeekRule cwr = ci.DateTimeFormat.CalendarWeekRule;
+            DayOfWeek dow = ci.DateTimeFormat.FirstDayOfWeek;
+
+            try {
+                using (StreamWriter sw = new StreamWriter(fileName)) {
+                    foreach (string col in csvColumnNames) {
+                        sw.Write(col + CSV_SEP);
+                    }
+                    sw.Write(NL);
+                    foreach (ExerciseData data in exerciseDataList) {
+                        sw.Write(data.Category + CSV_SEP); // category
+                        sw.Write(data.Location + CSV_SEP);  // location
+                        sw.Write(ExerciseData.formatTime(data.StartTime) + CSV_SEP);  // start
+                        sw.Write(ExerciseData.formatTime(data.EndTime) + CSV_SEP);  // end
+                        sw.Write(ExerciseData.formatTimeZone(data.StartTime, data.TZId) + CSV_SEP);  // end
+                        sw.Write($"{GpsUtils.M2MI * data.Distance:f2}" + CSV_SEP);  // distance
+                        sw.Write(ExerciseData.formatDuration(data.Duration) + CSV_SEP);  // duration
+                        sw.Write(data.Duration.TotalSeconds + CSV_SEP);  // duration(s)
+                        sw.Write(ExerciseData.formatSpeed(data.SpeedAvg) + CSV_SEP);  // avg speed
+                        sw.Write(ExerciseData.formatHeartRate(data.HrMin) + CSV_SEP);  // min heart rate
+                        sw.Write(ExerciseData.formatHeartRateAvg(data.HrAvg) + CSV_SEP);  // avg heart rate
+                        sw.Write(ExerciseData.formatHeartRate(data.HrMax) + CSV_SEP);  // max heart rate
+                        sw.Write(NL);
+                    }
+                    writeInfo(NL + "Wrote STL CSV " + fileName);
+                }
+            } catch (Exception ex) {
+                Utils.excMsg("Error writing STL CSV file " + fileName, ex);
+                return;
+            }
+        }
+
         public void createStlCsv(string fileName) {
             if (exerciseDataList == null) return;
             string[] csvColumnNames = new string[] { "id", "category",
@@ -444,7 +485,7 @@ namespace Exercise_Analyzer {
                         sw.Write(ExerciseData.formatPace(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace
                         sw.Write(ExerciseData.formatPaceSec(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace(s)
                         sw.Write(ExerciseData.formatSpeed(data.SpeedMax) + CSV_SEP);  // max speed
-                        sw.Write(ExerciseData.formatHeartRateAvg(data.HrAvg) + CSV_SEP);  // ave heart rate
+                        sw.Write(ExerciseData.formatHeartRateStlAvg(data.HrAvg) + CSV_SEP);  // ave heart rate
                         sw.Write(ExerciseData.formatElevation(data.EleGain) + CSV_SEP);  // elevation gain
                         sw.Write(ExerciseData.formatElevation(data.EleLoss) + CSV_SEP);  // elevation loss
                         sw.Write(ExerciseData.formatElevation(data.EleMax) + CSV_SEP);  // elevation max
@@ -597,6 +638,15 @@ namespace Exercise_Analyzer {
             }
         }
 
+        private void file_SaveCsv_click(object sender, EventArgs e) {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Filter = "CSV Files|*.csv";
+            dlg.Title = "Select a CSV file for Export";
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                createCsv(dlg.FileName);
+            }
+        }
+
         private void file_SaveStlCsv_click(object sender, EventArgs e) {
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.Filter = "CSV Files|*.csv";
@@ -723,28 +773,22 @@ namespace Exercise_Analyzer {
         }
 
         [JsonIgnore]
-        public int Year
-        {
-            get
-            {
+        public int Year {
+            get {
                 return StartTime.Year;
             }
         }
 
         [JsonIgnore]
-        public int Month
-        {
-            get
-            {
+        public int Month {
+            get {
                 return StartTime.Month;
             }
         }
 
         [JsonIgnore]
-        public int WeekOfYear
-        {
-            get
-            {
+        public int WeekOfYear {
+            get {
                 Calendar cal = CI.Calendar;
                 CalendarWeekRule cwr = CI.DateTimeFormat.CalendarWeekRule;
                 DayOfWeek dow = CI.DateTimeFormat.FirstDayOfWeek;
@@ -753,10 +797,8 @@ namespace Exercise_Analyzer {
         }
 
         [JsonIgnore]
-        public string MonthString
-        {
-            get
-            {
+        public string MonthString {
+            get {
                 return StartTime.ToString("MMMM");
             }
 

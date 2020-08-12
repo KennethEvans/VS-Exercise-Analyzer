@@ -70,8 +70,8 @@ namespace Exercise_Analyzer {
         public double SpeedMax { get; set; } // m/s
         public double SpeedMin { get; set; } // m/s
         public double HrAvg { get; set; } = 0;
-        public int HrMax { get; set; } = Int32.MinValue;
-        public int HrMin { get; set; } = Int32.MaxValue;
+        public int HrMax { get; set; } = 0;
+        public int HrMin { get; set; } = 0;
 
         public static ExerciseData processTcx(string fileName) {
             ExerciseData data = new ExerciseData();
@@ -1465,7 +1465,7 @@ namespace Exercise_Analyzer {
                 TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(TZId);
                 DateTime startTimeUtc = TimeZoneInfo.ConvertTimeToUtc(StartTime, tzi);
                 DateTime endTimeUtc = TimeZoneInfo.ConvertTimeToUtc(EndTime, tzi);
-                info += "StartTime[UTC]: " +  startTimeUtc.ToString(TimeFormatUTC)
+                info += "StartTime[UTC]: " + startTimeUtc.ToString(TimeFormatUTC)
                     + " End Time[UTC]: " + endTimeUtc.ToString(TimeFormatUTC) + NL;
             }
             info += "Duration: " + Duration + NL;
@@ -1691,7 +1691,17 @@ namespace Exercise_Analyzer {
             return formatDuration(span);
         }
 
+        public static string formatHeartRate(double hr) {
+            if (hr == 0) return "";
+            return $"{hr:f0}";
+        }
+
         public static string formatHeartRateAvg(double hr) {
+            if (hr == 0) return "";
+            return $"{hr:f1}";
+        }
+
+        public static string formatHeartRateStlAvg(double hr) {
             if (hr == 0) return "";
             return $"{hr:f0}";
         }
@@ -1702,6 +1712,26 @@ namespace Exercise_Analyzer {
                 return "";
             }
             return $"{GpsUtils.M2FT * elevation:f2}";
+        }
+
+        public static string formatTimeZone(DateTime time, string tzid) {
+            if (tzid == null) {
+                return "Not defined";
+            } else {
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(tzid);
+                string standardName = tzi.StandardName;
+                string daylightName = tzi.DaylightName;
+                TimeSpan baseUtcOffset = tzi.BaseUtcOffset;
+                TimeSpan utcOffset = tzi.GetUtcOffset(time);
+                TimeZoneValues abbrs = TZNames.GetAbbreviationsForTimeZone(tzi.Id, "en-US");
+                return (tzi.IsDaylightSavingTime(time) ?
+                    daylightName : standardName);
+            }
+        }
+
+        public static string formatTime(DateTime time) {
+            if (time == DateTime.MinValue) return "";
+            return time.ToString("yyyy-MM-dd HH:mm:ss ");
         }
 
         public static string formatTimeStl(DateTime time) {
@@ -1720,10 +1750,8 @@ namespace Exercise_Analyzer {
         }
 
         [JsonIgnore]
-        public string Source
-        {
-            get
-            {
+        public string Source {
+            get {
                 if (String.IsNullOrEmpty(Creator)) {
                     return "NA";
                 } else if (Creator.ToLower().Contains("polar")) {
@@ -1743,10 +1771,8 @@ namespace Exercise_Analyzer {
         }
 
         [JsonIgnore]
-        public DateTime StartTimeRounded
-        {
-            get
-            {
+        public DateTime StartTimeRounded {
+            get {
                 TimeSpan tolerance =
                     new TimeSpan(START_TIME_THRESHOLD_SECONDS *
                     TimeSpan.TicksPerSecond);
@@ -1758,49 +1784,39 @@ namespace Exercise_Analyzer {
         }
 
         [JsonIgnore]
-        public string Extension
-        {
-            get
-            {
+        public string Extension {
+            get {
                 if (String.IsNullOrEmpty(FileName)) return null;
                 return Path.GetExtension(FileName);
             }
         }
 
         [JsonIgnore]
-        public string SimpleFileName
-        {
-            get
-            {
+        public string SimpleFileName {
+            get {
                 if (String.IsNullOrEmpty(FileName)) return null;
                 return Path.GetFileName(FileName);
             }
         }
 
         [JsonIgnore]
-        public string FileNameWithoutExtension
-        {
-            get
-            {
+        public string FileNameWithoutExtension {
+            get {
                 if (String.IsNullOrEmpty(FileName)) return null;
                 return Path.GetFileNameWithoutExtension(FileName);
             }
         }
 
         [JsonIgnore]
-        public bool IsTcx
-        {
-            get
-            {
+        public bool IsTcx {
+            get {
                 return Path.GetExtension(FileName).ToLower() == ".tcx";
             }
         }
 
         [JsonIgnore]
-        public bool IsGpx
-        {
-            get
-            {
+        public bool IsGpx {
+            get {
                 return Path.GetExtension(FileName).ToLower() == ".gpx";
             }
         }

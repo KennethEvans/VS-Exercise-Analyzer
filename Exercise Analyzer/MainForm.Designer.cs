@@ -67,6 +67,7 @@
             this.overviewOnlineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveCSVToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -81,7 +82,7 @@
             this.tableLayoutPanelTop.Controls.Add(this.textBoxInfo, 0, 3);
             this.tableLayoutPanelTop.Controls.Add(this.flowLayoutPanelButtons, 0, 4);
             this.tableLayoutPanelTop.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanelTop.Location = new System.Drawing.Point(0, 49);
+            this.tableLayoutPanelTop.Location = new System.Drawing.Point(0, 52);
             this.tableLayoutPanelTop.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.tableLayoutPanelTop.Name = "tableLayoutPanelTop";
             this.tableLayoutPanelTop.RowCount = 5;
@@ -90,7 +91,7 @@
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanelTop.Size = new System.Drawing.Size(1674, 887);
+            this.tableLayoutPanelTop.Size = new System.Drawing.Size(1674, 884);
             this.tableLayoutPanelTop.TabIndex = 1;
             // 
             // textBoxInfo
@@ -101,7 +102,7 @@
             this.textBoxInfo.Multiline = true;
             this.textBoxInfo.Name = "textBoxInfo";
             this.textBoxInfo.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxInfo.Size = new System.Drawing.Size(1668, 833);
+            this.textBoxInfo.Size = new System.Drawing.Size(1668, 830);
             this.textBoxInfo.TabIndex = 4;
             // 
             // flowLayoutPanelButtons
@@ -112,7 +113,7 @@
             this.flowLayoutPanelButtons.BackColor = System.Drawing.SystemColors.Control;
             this.flowLayoutPanelButtons.Controls.Add(this.buttonProcess1);
             this.flowLayoutPanelButtons.Controls.Add(this.buttonQuit);
-            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(745, 839);
+            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(745, 836);
             this.flowLayoutPanelButtons.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
             this.flowLayoutPanelButtons.Size = new System.Drawing.Size(183, 46);
@@ -149,6 +150,7 @@
             // 
             // menuStrip1
             // 
+            this.menuStrip1.GripMargin = new System.Windows.Forms.Padding(2, 2, 0, 2);
             this.menuStrip1.ImageScalingSize = new System.Drawing.Size(40, 40);
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
@@ -157,7 +159,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1674, 49);
+            this.menuStrip1.Size = new System.Drawing.Size(1674, 52);
             this.menuStrip1.TabIndex = 2;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -167,48 +169,49 @@
             this.processFilesToolStripMenuItem,
             this.toolStripSeparator1,
             this.saveWeeklyReportToolStripMenuItem,
+            this.saveCSVToolStripMenuItem1,
             this.saveCSVToolStripMenuItem,
             this.toolStripSeparator4,
             this.quitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(75, 45);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(87, 48);
             this.fileToolStripMenuItem.Text = "File";
             // 
             // processFilesToolStripMenuItem
             // 
             this.processFilesToolStripMenuItem.Name = "processFilesToolStripMenuItem";
-            this.processFilesToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
+            this.processFilesToolStripMenuItem.Size = new System.Drawing.Size(467, 54);
             this.processFilesToolStripMenuItem.Text = "Process Files...";
             this.processFilesToolStripMenuItem.Click += new System.EventHandler(this.file_ProcessFiles_click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(412, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(464, 6);
             // 
             // saveWeeklyReportToolStripMenuItem
             // 
             this.saveWeeklyReportToolStripMenuItem.Name = "saveWeeklyReportToolStripMenuItem";
-            this.saveWeeklyReportToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
+            this.saveWeeklyReportToolStripMenuItem.Size = new System.Drawing.Size(467, 54);
             this.saveWeeklyReportToolStripMenuItem.Text = "Save Weekly Report...";
             this.saveWeeklyReportToolStripMenuItem.Click += new System.EventHandler(this.file_WeeklyReport_click);
             // 
             // saveCSVToolStripMenuItem
             // 
             this.saveCSVToolStripMenuItem.Name = "saveCSVToolStripMenuItem";
-            this.saveCSVToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
+            this.saveCSVToolStripMenuItem.Size = new System.Drawing.Size(467, 54);
             this.saveCSVToolStripMenuItem.Text = "Save STL CSV...";
             this.saveCSVToolStripMenuItem.Click += new System.EventHandler(this.file_SaveStlCsv_click);
             // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(412, 6);
+            this.toolStripSeparator4.Size = new System.Drawing.Size(464, 6);
             // 
             // quitToolStripMenuItem
             // 
             this.quitToolStripMenuItem.Name = "quitToolStripMenuItem";
-            this.quitToolStripMenuItem.Size = new System.Drawing.Size(415, 46);
+            this.quitToolStripMenuItem.Size = new System.Drawing.Size(467, 54);
             this.quitToolStripMenuItem.Text = "Quit";
             this.quitToolStripMenuItem.Click += new System.EventHandler(this.file_Exit_click);
             // 
@@ -226,60 +229,60 @@
             this.exportToolStripMenuItem,
             this.importToolStripMenuItem});
             this.dataToolStripMenuItem.Name = "dataToolStripMenuItem";
-            this.dataToolStripMenuItem.Size = new System.Drawing.Size(91, 45);
+            this.dataToolStripMenuItem.Size = new System.Drawing.Size(103, 48);
             this.dataToolStripMenuItem.Text = "Data";
             // 
             // consolidateToolStripMenuItem
             // 
             this.consolidateToolStripMenuItem.Name = "consolidateToolStripMenuItem";
-            this.consolidateToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.consolidateToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.consolidateToolStripMenuItem.Text = "Consolidate";
             this.consolidateToolStripMenuItem.Click += new System.EventHandler(this.data_Consolidate_click);
             // 
             // sortToolStripMenuItem
             // 
             this.sortToolStripMenuItem.Name = "sortToolStripMenuItem";
-            this.sortToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.sortToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.sortToolStripMenuItem.Text = "Sort";
             this.sortToolStripMenuItem.Click += new System.EventHandler(this.data_Sort_click);
             // 
             // clearToolStripMenuItem
             // 
             this.clearToolStripMenuItem.Name = "clearToolStripMenuItem";
-            this.clearToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.clearToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.clearToolStripMenuItem.Text = "Clear";
             this.clearToolStripMenuItem.Click += new System.EventHandler(this.data_Clear_click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(404, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(456, 6);
             // 
             // infoToolStripMenuItem
             // 
             this.infoToolStripMenuItem.Name = "infoToolStripMenuItem";
-            this.infoToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.infoToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.infoToolStripMenuItem.Text = "Info";
             this.infoToolStripMenuItem.Click += new System.EventHandler(this.data_Info_click);
             // 
             // infoVerboseToolStripMenuItem
             // 
             this.infoVerboseToolStripMenuItem.Name = "infoVerboseToolStripMenuItem";
-            this.infoVerboseToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.infoVerboseToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.infoVerboseToolStripMenuItem.Text = "Info Verbose";
             this.infoVerboseToolStripMenuItem.Click += new System.EventHandler(this.data_InfoVerbose_click);
             // 
             // selectedItemsInfoToolStripMenuItem
             // 
             this.selectedItemsInfoToolStripMenuItem.Name = "selectedItemsInfoToolStripMenuItem";
-            this.selectedItemsInfoToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.selectedItemsInfoToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.selectedItemsInfoToolStripMenuItem.Text = "Selected Items Info...";
             this.selectedItemsInfoToolStripMenuItem.Click += new System.EventHandler(this.data_SingleItemInfo_click);
             // 
             // toolStripSeparator3
             // 
             this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(404, 6);
+            this.toolStripSeparator3.Size = new System.Drawing.Size(456, 6);
             // 
             // exportToolStripMenuItem
             // 
@@ -287,27 +290,27 @@
             this.formattedToolStripMenuItem,
             this.unformattedToolStripMenuItem});
             this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-            this.exportToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.exportToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.exportToolStripMenuItem.Text = "Export...";
             // 
             // formattedToolStripMenuItem
             // 
             this.formattedToolStripMenuItem.Name = "formattedToolStripMenuItem";
-            this.formattedToolStripMenuItem.Size = new System.Drawing.Size(310, 46);
+            this.formattedToolStripMenuItem.Size = new System.Drawing.Size(362, 54);
             this.formattedToolStripMenuItem.Text = "Indented";
             this.formattedToolStripMenuItem.Click += new System.EventHandler(this.data_Export_click);
             // 
             // unformattedToolStripMenuItem
             // 
             this.unformattedToolStripMenuItem.Name = "unformattedToolStripMenuItem";
-            this.unformattedToolStripMenuItem.Size = new System.Drawing.Size(310, 46);
+            this.unformattedToolStripMenuItem.Size = new System.Drawing.Size(362, 54);
             this.unformattedToolStripMenuItem.Text = "Not Indented";
             this.unformattedToolStripMenuItem.Click += new System.EventHandler(this.data_Export_click);
             // 
             // importToolStripMenuItem
             // 
             this.importToolStripMenuItem.Name = "importToolStripMenuItem";
-            this.importToolStripMenuItem.Size = new System.Drawing.Size(407, 46);
+            this.importToolStripMenuItem.Size = new System.Drawing.Size(459, 54);
             this.importToolStripMenuItem.Text = "Import...";
             this.importToolStripMenuItem.Click += new System.EventHandler(this.data_Import_click);
             // 
@@ -324,27 +327,27 @@
             this.toolStripSeparator6,
             this.singleFileInfoToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(99, 45);
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(111, 48);
             this.toolsToolStripMenuItem.Text = "Tools";
             // 
             // formatTCXGPXToolStripMenuItem
             // 
             this.formatTCXGPXToolStripMenuItem.Name = "formatTCXGPXToolStripMenuItem";
-            this.formatTCXGPXToolStripMenuItem.Size = new System.Drawing.Size(471, 46);
+            this.formatTCXGPXToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
             this.formatTCXGPXToolStripMenuItem.Text = "Format TCX/GPX...";
             this.formatTCXGPXToolStripMenuItem.Click += new System.EventHandler(this.tools_FormatTCX_GPX_click);
             // 
             // formatXMLToolStripMenuItem
             // 
             this.formatXMLToolStripMenuItem.Name = "formatXMLToolStripMenuItem";
-            this.formatXMLToolStripMenuItem.Size = new System.Drawing.Size(471, 46);
+            this.formatXMLToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
             this.formatXMLToolStripMenuItem.Text = "Format XML...";
             this.formatXMLToolStripMenuItem.Click += new System.EventHandler(this.tools_FormatXml_click);
             // 
             // toolStripSeparator5
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(468, 6);
+            this.toolStripSeparator5.Size = new System.Drawing.Size(520, 6);
             // 
             // interpolateTCXFromGPXToolStripMenuItem
             // 
@@ -352,53 +355,53 @@
             this.inaccurateGPSToolStripMenuItem,
             this.gPSDropoutToolStripMenuItem});
             this.interpolateTCXFromGPXToolStripMenuItem.Name = "interpolateTCXFromGPXToolStripMenuItem";
-            this.interpolateTCXFromGPXToolStripMenuItem.Size = new System.Drawing.Size(471, 46);
+            this.interpolateTCXFromGPXToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
             this.interpolateTCXFromGPXToolStripMenuItem.Text = "Interpolate TCX from GPX";
             // 
             // inaccurateGPSToolStripMenuItem
             // 
             this.inaccurateGPSToolStripMenuItem.Name = "inaccurateGPSToolStripMenuItem";
-            this.inaccurateGPSToolStripMenuItem.Size = new System.Drawing.Size(481, 46);
+            this.inaccurateGPSToolStripMenuItem.Size = new System.Drawing.Size(533, 54);
             this.inaccurateGPSToolStripMenuItem.Text = "Match Lat/Lon in Interval...";
             this.inaccurateGPSToolStripMenuItem.Click += new System.EventHandler(this.tools_InterpolateTcx_click);
             // 
             // gPSDropoutToolStripMenuItem
             // 
             this.gPSDropoutToolStripMenuItem.Name = "gPSDropoutToolStripMenuItem";
-            this.gPSDropoutToolStripMenuItem.Size = new System.Drawing.Size(481, 46);
+            this.gPSDropoutToolStripMenuItem.Size = new System.Drawing.Size(533, 54);
             this.gPSDropoutToolStripMenuItem.Text = "Use Whole Interval...";
             this.gPSDropoutToolStripMenuItem.Click += new System.EventHandler(this.tools_InterpolateTcx_click);
             // 
             // deleteTCXTrackpointsToolStripMenuItem
             // 
             this.deleteTCXTrackpointsToolStripMenuItem.Name = "deleteTCXTrackpointsToolStripMenuItem";
-            this.deleteTCXTrackpointsToolStripMenuItem.Size = new System.Drawing.Size(471, 46);
+            this.deleteTCXTrackpointsToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
             this.deleteTCXTrackpointsToolStripMenuItem.Text = "Delete TCX Trackpoints...";
             this.deleteTCXTrackpointsToolStripMenuItem.Click += new System.EventHandler(this.tools_DeleteTcxTrackpoints_click);
             // 
             // recalculateTCXToolStripMenuItem
             // 
             this.recalculateTCXToolStripMenuItem.Name = "recalculateTCXToolStripMenuItem";
-            this.recalculateTCXToolStripMenuItem.Size = new System.Drawing.Size(471, 46);
+            this.recalculateTCXToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
             this.recalculateTCXToolStripMenuItem.Text = "Recalculate TCX...";
             this.recalculateTCXToolStripMenuItem.Click += new System.EventHandler(this.tools_RecalculateTcx_click);
             // 
             // fixGPXToolStripMenuItem
             // 
             this.fixGPXToolStripMenuItem.Name = "fixGPXToolStripMenuItem";
-            this.fixGPXToolStripMenuItem.Size = new System.Drawing.Size(471, 46);
+            this.fixGPXToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
             this.fixGPXToolStripMenuItem.Text = "Fix Polar Access GPX...";
             this.fixGPXToolStripMenuItem.Click += new System.EventHandler(this.tools_FixPolarGpx_click);
             // 
             // toolStripSeparator6
             // 
             this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(468, 6);
+            this.toolStripSeparator6.Size = new System.Drawing.Size(520, 6);
             // 
             // singleFileInfoToolStripMenuItem
             // 
             this.singleFileInfoToolStripMenuItem.Name = "singleFileInfoToolStripMenuItem";
-            this.singleFileInfoToolStripMenuItem.Size = new System.Drawing.Size(471, 46);
+            this.singleFileInfoToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
             this.singleFileInfoToolStripMenuItem.Text = "Single File Info...";
             this.singleFileInfoToolStripMenuItem.Click += new System.EventHandler(this.tools_SingleFileInfo_click);
             // 
@@ -410,34 +413,41 @@
             this.toolStripSeparator7,
             this.aboutToolStripMenuItem});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            this.helpToolStripMenuItem.Size = new System.Drawing.Size(92, 45);
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(104, 48);
             this.helpToolStripMenuItem.Text = "Help";
             // 
             // overviewToolStripMenuItem
             // 
             this.overviewToolStripMenuItem.Name = "overviewToolStripMenuItem";
-            this.overviewToolStripMenuItem.Size = new System.Drawing.Size(388, 46);
+            this.overviewToolStripMenuItem.Size = new System.Drawing.Size(440, 54);
             this.overviewToolStripMenuItem.Text = "Overview...";
             this.overviewToolStripMenuItem.Click += new System.EventHandler(this.help_Overview_click);
             // 
             // overviewOnlineToolStripMenuItem
             // 
             this.overviewOnlineToolStripMenuItem.Name = "overviewOnlineToolStripMenuItem";
-            this.overviewOnlineToolStripMenuItem.Size = new System.Drawing.Size(388, 46);
+            this.overviewOnlineToolStripMenuItem.Size = new System.Drawing.Size(440, 54);
             this.overviewOnlineToolStripMenuItem.Text = "Overview (Online)...";
             this.overviewOnlineToolStripMenuItem.Click += new System.EventHandler(this.help_OverviewOnline_click);
             // 
             // toolStripSeparator7
             // 
             this.toolStripSeparator7.Name = "toolStripSeparator7";
-            this.toolStripSeparator7.Size = new System.Drawing.Size(385, 6);
+            this.toolStripSeparator7.Size = new System.Drawing.Size(437, 6);
             // 
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(388, 46);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(440, 54);
             this.aboutToolStripMenuItem.Text = "About...";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.help_About_click);
+            // 
+            // saveCSVToolStripMenuItem1
+            // 
+            this.saveCSVToolStripMenuItem1.Name = "saveCSVToolStripMenuItem1";
+            this.saveCSVToolStripMenuItem1.Size = new System.Drawing.Size(467, 54);
+            this.saveCSVToolStripMenuItem1.Text = "Save CSV...";
+            this.saveCSVToolStripMenuItem1.Click += new System.EventHandler(this.file_SaveCsv_click);
             // 
             // MainForm
             // 
@@ -506,6 +516,7 @@
         private System.Windows.Forms.ToolStripMenuItem fixGPXToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem inaccurateGPSToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gPSDropoutToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveCSVToolStripMenuItem1;
     }
 }
 

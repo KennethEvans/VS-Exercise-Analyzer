@@ -34,6 +34,7 @@
             this.processFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.saveWeeklyReportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveCSVToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.saveCSVToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -58,6 +59,7 @@
             this.inaccurateGPSToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gPSDropoutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteTCXTrackpointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.changeTCXTimesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.recalculateTCXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fixGPXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
@@ -67,7 +69,6 @@
             this.overviewOnlineToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.saveCSVToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanelTop.SuspendLayout();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -82,7 +83,7 @@
             this.tableLayoutPanelTop.Controls.Add(this.textBoxInfo, 0, 3);
             this.tableLayoutPanelTop.Controls.Add(this.flowLayoutPanelButtons, 0, 4);
             this.tableLayoutPanelTop.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanelTop.Location = new System.Drawing.Point(0, 52);
+            this.tableLayoutPanelTop.Location = new System.Drawing.Point(0, 60);
             this.tableLayoutPanelTop.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.tableLayoutPanelTop.Name = "tableLayoutPanelTop";
             this.tableLayoutPanelTop.RowCount = 5;
@@ -91,7 +92,7 @@
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanelTop.Size = new System.Drawing.Size(1674, 884);
+            this.tableLayoutPanelTop.Size = new System.Drawing.Size(1674, 876);
             this.tableLayoutPanelTop.TabIndex = 1;
             // 
             // textBoxInfo
@@ -102,7 +103,7 @@
             this.textBoxInfo.Multiline = true;
             this.textBoxInfo.Name = "textBoxInfo";
             this.textBoxInfo.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxInfo.Size = new System.Drawing.Size(1668, 830);
+            this.textBoxInfo.Size = new System.Drawing.Size(1668, 822);
             this.textBoxInfo.TabIndex = 4;
             // 
             // flowLayoutPanelButtons
@@ -113,7 +114,7 @@
             this.flowLayoutPanelButtons.BackColor = System.Drawing.SystemColors.Control;
             this.flowLayoutPanelButtons.Controls.Add(this.buttonProcess1);
             this.flowLayoutPanelButtons.Controls.Add(this.buttonQuit);
-            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(745, 836);
+            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(745, 828);
             this.flowLayoutPanelButtons.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
             this.flowLayoutPanelButtons.Size = new System.Drawing.Size(183, 46);
@@ -159,7 +160,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1674, 52);
+            this.menuStrip1.Size = new System.Drawing.Size(1674, 60);
             this.menuStrip1.TabIndex = 2;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -174,7 +175,7 @@
             this.toolStripSeparator4,
             this.quitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(87, 48);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(87, 56);
             this.fileToolStripMenuItem.Text = "File";
             // 
             // processFilesToolStripMenuItem
@@ -195,6 +196,13 @@
             this.saveWeeklyReportToolStripMenuItem.Size = new System.Drawing.Size(467, 54);
             this.saveWeeklyReportToolStripMenuItem.Text = "Save Weekly Report...";
             this.saveWeeklyReportToolStripMenuItem.Click += new System.EventHandler(this.file_WeeklyReport_click);
+            // 
+            // saveCSVToolStripMenuItem1
+            // 
+            this.saveCSVToolStripMenuItem1.Name = "saveCSVToolStripMenuItem1";
+            this.saveCSVToolStripMenuItem1.Size = new System.Drawing.Size(467, 54);
+            this.saveCSVToolStripMenuItem1.Text = "Save CSV...";
+            this.saveCSVToolStripMenuItem1.Click += new System.EventHandler(this.file_SaveCsv_click);
             // 
             // saveCSVToolStripMenuItem
             // 
@@ -229,7 +237,7 @@
             this.exportToolStripMenuItem,
             this.importToolStripMenuItem});
             this.dataToolStripMenuItem.Name = "dataToolStripMenuItem";
-            this.dataToolStripMenuItem.Size = new System.Drawing.Size(103, 48);
+            this.dataToolStripMenuItem.Size = new System.Drawing.Size(103, 56);
             this.dataToolStripMenuItem.Text = "Data";
             // 
             // consolidateToolStripMenuItem
@@ -322,12 +330,13 @@
             this.toolStripSeparator5,
             this.interpolateTCXFromGPXToolStripMenuItem,
             this.deleteTCXTrackpointsToolStripMenuItem,
+            this.changeTCXTimesToolStripMenuItem,
             this.recalculateTCXToolStripMenuItem,
             this.fixGPXToolStripMenuItem,
             this.toolStripSeparator6,
             this.singleFileInfoToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(111, 48);
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(111, 56);
             this.toolsToolStripMenuItem.Text = "Tools";
             // 
             // formatTCXGPXToolStripMenuItem
@@ -379,6 +388,13 @@
             this.deleteTCXTrackpointsToolStripMenuItem.Text = "Delete TCX Trackpoints...";
             this.deleteTCXTrackpointsToolStripMenuItem.Click += new System.EventHandler(this.tools_DeleteTcxTrackpoints_click);
             // 
+            // changeTCXTimesToolStripMenuItem
+            // 
+            this.changeTCXTimesToolStripMenuItem.Name = "changeTCXTimesToolStripMenuItem";
+            this.changeTCXTimesToolStripMenuItem.Size = new System.Drawing.Size(523, 54);
+            this.changeTCXTimesToolStripMenuItem.Text = "Change TCX Times...";
+            this.changeTCXTimesToolStripMenuItem.Click += new System.EventHandler(this.tools_ChangeTimesTcx_click);
+            // 
             // recalculateTCXToolStripMenuItem
             // 
             this.recalculateTCXToolStripMenuItem.Name = "recalculateTCXToolStripMenuItem";
@@ -413,7 +429,7 @@
             this.toolStripSeparator7,
             this.aboutToolStripMenuItem});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            this.helpToolStripMenuItem.Size = new System.Drawing.Size(104, 48);
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(104, 56);
             this.helpToolStripMenuItem.Text = "Help";
             // 
             // overviewToolStripMenuItem
@@ -441,13 +457,6 @@
             this.aboutToolStripMenuItem.Size = new System.Drawing.Size(440, 54);
             this.aboutToolStripMenuItem.Text = "About...";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.help_About_click);
-            // 
-            // saveCSVToolStripMenuItem1
-            // 
-            this.saveCSVToolStripMenuItem1.Name = "saveCSVToolStripMenuItem1";
-            this.saveCSVToolStripMenuItem1.Size = new System.Drawing.Size(467, 54);
-            this.saveCSVToolStripMenuItem1.Text = "Save CSV...";
-            this.saveCSVToolStripMenuItem1.Click += new System.EventHandler(this.file_SaveCsv_click);
             // 
             // MainForm
             // 
@@ -517,6 +526,7 @@
         private System.Windows.Forms.ToolStripMenuItem inaccurateGPSToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gPSDropoutToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveCSVToolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem changeTCXTimesToolStripMenuItem;
     }
 }
 

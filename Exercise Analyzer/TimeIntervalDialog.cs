@@ -63,6 +63,11 @@ namespace Exercise_Analyzer {
             }
         }
 
+        public void setStartDateVisible(bool visible) {
+            labelStart.Visible = visible;
+            textBoxStartDate.Visible = visible;
+        }
+
         private void btn_clicked(object sender, EventArgs e) {
             Button btn = (Button)sender;
             if (btn == buttonOk) {

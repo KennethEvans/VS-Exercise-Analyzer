@@ -1102,6 +1102,99 @@ namespace Exercise_Analyzer {
             return new TcxResult(tcx, msg);
         }
 
+        public static TcxResult changeTimesTcx(string tcxFile) {
+            TrainingCenterDatabase tcx = TrainingCenterDatabase.Load(tcxFile);
+            if (tcx.Activities == null) {
+                return new TcxResult(null, "No avtivities");
+            }
+
+            // Prompt for time interval
+            ExerciseData data = processTcx(tcxFile);
+            DateTime start = data.StartTime;
+            DateTime oldStart = data.StartTime.ToUniversalTime();
+            DateTime newStart = oldStart;
+            TimeIntervalDialog dlg = new TimeIntervalDialog();
+            dlg.Title = "Start Time";
+            dlg.Label = "Select a new start time";
+            dlg.StartDate = oldStart;
+            dlg.EndDate = oldStart;
+            dlg.setStartDateVisible(false);
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                newStart = dlg.EndDate.ToUniversalTime();
+            } else {
+                return new TcxResult(null, "Canceled");
+            }
+            TimeSpan deltaTime = newStart.Subtract(oldStart);
+#if true
+            IList<Activity_t> activityList;
+            IList<ActivityLap_t> lapList;
+            IList<Track_t> trackList;
+            IList<Trackpoint_t> trackpointList;
+            int nActs, nLaps, nTrks, nTkpts;
+
+            nActs = nLaps = nTrks = nTkpts = 0;
+            DateTime timeFirst = DateTime.MinValue;
+            DateTime timeLast = DateTime.MinValue;
+            // Loop over activities
+            activityList = tcx.Activities.Activity;
+            foreach (Activity_t activity in activityList) {
+#if debugging
+                Debug.WriteLine("Activity " + nActs);
+#endif
+                nActs++;
+                if (nActs > 1) {
+                    // Only the first Activity is processed
+                    continue;
+                }
+                // Loop over laps (are like tracks in GPX)
+                nLaps = 0;
+                lapList = activity.Lap;
+                foreach (ActivityLap_t lap in lapList) {
+#if debugging
+                    Debug.WriteLine("Lap (Track) " + nLaps);
+#endif
+                    nLaps++;
+                    if (nLaps > 1) {
+                        // Only the first Lap is processed
+                        continue;
+                    }
+                    // Loop over tracks
+                    trackList = lap.Track;
+                    nTrks = 0;
+                    foreach (Track_t trk in trackList) {
+                        nTrks++;
+                        if (nTrks > 1) {
+                            // Only the first track is processed
+                            continue;
+                        }
+                        // Loop over trackpoints
+                        nTkpts = 0;
+                        trackpointList = trk.Trackpoint;
+                        foreach (Trackpoint_t tpt in trackpointList) {
+                            if (tpt.Time == null) continue;
+#if debugging
+                            Debug.WriteLine("start=" + start);
+                            Debug.WriteLine("end=" + end);
+                            Debug.WriteLine("time=" + tpt.Time);
+                            Debug.WriteLine("time (UTC)=" + tpt.Time.ToUniversalTime());
+                            Debug.WriteLine("compare=" + DateTime.Compare(tpt.Time.ToUniversalTime(), start));
+#endif
+                            tpt.Time = tpt.Time + deltaTime;
+                            nTkpts++;
+                        } // End of Trackpoints
+                    }  // End of tracks
+                }  // End of laps
+            }  // End of activities
+#endif
+            // Recalculate parameters
+            TrainingCenterDatabase txcRecalculate = recalculateTcx(tcxFile, tcx);
+            string msg = "Changed start time from "
+                + start + " to " + start.Add(deltaTime)
+                + " [" + oldStart.ToUniversalTime().ToString("u")
+                + " to " + newStart.ToUniversalTime().ToString("u") + "]";
+            return new TcxResult(tcx, msg);
+        }
+
         public static GpxResult fixPolarGpx(string gpxFile) {
             gpx gpxType = gpx.Load(gpxFile);
             ExerciseData data = processGpx(gpxFile);

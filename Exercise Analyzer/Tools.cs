@@ -283,6 +283,47 @@ namespace Exercise_Analyzer {
             }
         }
 
+        public static void changeTimesTcx(MainForm mainForm) {
+            string tcxFile = null;
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "TCX|*.tcx";
+            dlg.Title = "Select TCX file to change times in";
+            dlg.Multiselect = false;
+            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                if (dlg.FileName == null) {
+                    Utils.warnMsg("Failed to open file to change times in");
+                    return;
+                }
+                tcxFile = dlg.FileName;
+                changeTimesTcx(tcxFile, mainForm);
+            }
+        }
+
+        public static void changeTimesTcx(string tcxFile, MainForm mainForm) {
+            try {
+                TcxResult res =
+                    ExerciseData.changeTimesTcx(tcxFile);
+                if (res.TCX == null) {
+                    Utils.errMsg("Change times in TCX failed:" + NL
+                        + "for " + Path.GetFileName(tcxFile) + NL
+                        + res.Message);
+                    return;
+                }
+                string saveFileName = getSaveName(tcxFile, ".timechange");
+                if (saveFileName != null) {
+                    res.TCX.Save(saveFileName);
+                    mainForm.writeInfo(NL + "Changed times in " + tcxFile + NL
+                        + "  Output is " + saveFileName
+                        + NL + "  " + res.Message);
+                } else {
+                    return;
+                }
+            } catch (Exception ex) {
+                Utils.excMsg("Error change times in TCX", ex);
+                return;
+            }
+        }
+
         public static void fixPolarGpx(MainForm mainForm) {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "GPX|*.gpx";
@@ -310,7 +351,7 @@ namespace Exercise_Analyzer {
                         + res.Message);
                     return;
                 }
-                if(res.Message.StartsWith("Unmodified")) {
+                if (res.Message.StartsWith("Unmodified")) {
                     mainForm.writeInfo(NL + "Did not change " + gpxFile + NL);
                     return;
                 }
@@ -319,7 +360,7 @@ namespace Exercise_Analyzer {
                 res.GPX.Save(gpxFile);
                 File.SetLastWriteTime(gpxFile, lastModifiedTime);
                 mainForm.writeInfo(NL + "Overwrote " + gpxFile + NL
-                    +  res.Message);
+                    + res.Message);
             } catch (Exception ex) {
                 Utils.excMsg("Error fixing Gpx for " + gpxFile, ex);
                 return;

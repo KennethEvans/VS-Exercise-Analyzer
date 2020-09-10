@@ -704,6 +704,10 @@ namespace Exercise_Analyzer {
             getSingleFileInfo(this);
         }
 
+        private void tools_ChangeTimesTcx_click(object sender, EventArgs e) {
+            changeTimesTcx(this);
+        }
+
         private void tools_RecalculateTcx_click(object sender, EventArgs e) {
             recalculateTcx(this);
         }

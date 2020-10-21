@@ -14,22 +14,29 @@ using About;
 using KEUtils;
 using Newtonsoft.Json;
 using ScrolledHTML;
+using KEGpsUtils;
 
 namespace Exercise_Analyzer {
     public partial class MainForm : Form {
         public static readonly String NL = Environment.NewLine;
         public const string CSV_SEP = ",";
         public enum Category { Unknown, Walking, Cycling, Workout, Other }
-        private List<ExerciseData> exerciseDataList;
+        private List<GpsData> exerciseDataList;
         private const bool processSilent = false;
         private static ScrolledHTMLDialog overviewDlg;
 
+        private GpxTcxMenu gpxTcxMenu;
 
         public MainForm() {
             InitializeComponent();
 
+            // Add GpxTcxMenu at position 3
+            gpxTcxMenu = new GpxTcxMenu();
+            gpxTcxMenu.GpxTcxEvent += onGpxTcxEvent;
+            gpxTcxMenu.createMenu(menuStrip1, 2);
+
             writeInfo("Exercise Analyzer " + DateTime.Now);
-            exerciseDataList = new List<ExerciseData>();
+            exerciseDataList = new List<GpsData>();
         }
 
         /// <summary>
@@ -40,14 +47,14 @@ namespace Exercise_Analyzer {
             textBoxInfo.AppendText(line + NL);
         }
 
-        public List<ExerciseData> processFiles(MainForm app, string[] fileNames, bool silent = true) {
+        public List<GpsData> processFiles(MainForm app, string[] fileNames, bool silent = true) {
             writeInfo(NL + "Processing " + fileNames.Length + " files");
             if (fileNames == null) {
                 writeInfo("  Error: No files given");
                 return null;
             }
-            List<ExerciseData> exerciseList = new List<ExerciseData>();
-            ExerciseData data;
+            List<GpsData> exerciseList = new List<GpsData>();
+            GpsData data;
             int nFailed = 0;
             foreach (string fileName in fileNames) {
                 data = null;
@@ -60,10 +67,10 @@ namespace Exercise_Analyzer {
                     }
                     if (ext.ToLower().Equals(".gpx")) {
                         app.writeInfo(NL + "Processing " + fileName);
-                        data = ExerciseData.processGpx(fileName);
+                        data = GpsData.processGpx(fileName);
                     } else if (ext.ToLower().Equals(".tcx")) {
                         app.writeInfo(NL + "Processing " + fileName);
-                        data = ExerciseData.processTcx(fileName);
+                        data = GpsData.processTcx(fileName);
                     }
                     if (data == null) {
                         writeInfo("Failed to process " + fileName);
@@ -85,10 +92,10 @@ namespace Exercise_Analyzer {
         private void consolidateData() {
             writeInfo(NL + "Consolidating the data");
             sortData();
-            ExerciseData gpxData;
-            List<ExerciseData> gpxDataList = new List<ExerciseData>();
+            GpsData gpxData;
+            List<GpsData> gpxDataList = new List<GpsData>();
             // Find GPX files with the same name as a TCX file
-            foreach (ExerciseData data in exerciseDataList) {
+            foreach (GpsData data in exerciseDataList) {
                 if (data.IsTcx) {
                     gpxData = exerciseDataList.Find(item =>
                         item.Extension.ToLower() == ".gpx" &&
@@ -108,8 +115,8 @@ namespace Exercise_Analyzer {
             // Remove the matching GPX files
             bool res;
             int nErrors = 0;
-            List<ExerciseData> failedList = new List<ExerciseData>();
-            foreach (ExerciseData data in gpxDataList) {
+            List<GpsData> failedList = new List<GpsData>();
+            foreach (GpsData data in gpxDataList) {
                 res = exerciseDataList.Remove(data);
                 if (!res) {
                     nErrors++;
@@ -118,34 +125,34 @@ namespace Exercise_Analyzer {
             }
             if (nErrors > 0) {
                 writeInfo("Failed to remove " + nErrors + " Gpx files");
-                foreach (ExerciseData data in failedList) {
+                foreach (GpsData data in failedList) {
                     writeInfo("    " + data.FileName);
                 }
             }
 
             // Find files with similar start time
-            IEnumerable<IGrouping<DateTime, ExerciseData>> groupList = exerciseDataList
+            IEnumerable<IGrouping<DateTime, GpsData>> groupList = exerciseDataList
                .GroupBy(data => data.StartTimeRounded)
                .Where(grp => grp.Count() > 1);
             int nDuplicates = groupList.Count();
-            List<IGrouping<DateTime, ExerciseData>> groups = groupList.ToList();
+            List<IGrouping<DateTime, GpsData>> groups = groupList.ToList();
             writeInfo("  Found " + nDuplicates + " Groups with simlilar StartTime");
-            foreach (IGrouping<DateTime, ExerciseData> group in groups) {
+            foreach (IGrouping<DateTime, GpsData> group in groups) {
                 DateTime startTimeRounded = group.Key;
                 writeInfo("  StartTimeRounded=" + startTimeRounded);
-                foreach (ExerciseData data in group) {
+                foreach (GpsData data in group) {
                     string fileName = data.FileName;
                     writeInfo("    " + data.FileName + " " + data.StartTime);
                 }
             }
 
             // Prompt for which ones to keep
-            List<ExerciseData> removeList = new List<ExerciseData>();
+            List<GpsData> removeList = new List<GpsData>();
             List<string> fileNamesList = new List<string>();
-            foreach (IGrouping<DateTime, ExerciseData> group in groups) {
+            foreach (IGrouping<DateTime, GpsData> group in groups) {
                 DateTime startTimeRounded = group.Key;
                 List<string> filesList = new List<string>(group.Count());
-                foreach (ExerciseData data in group) {
+                foreach (GpsData data in group) {
                     filesList.Add(data.FileName);
                 }
                 MultiChoiceCheckDialog dlg = new MultiChoiceCheckDialog(filesList);
@@ -157,7 +164,7 @@ namespace Exercise_Analyzer {
                 List<Result> results = dlg.Results;
                 foreach (Result result in results) {
                     if (!result.Checked) {
-                        ExerciseData data =
+                        GpsData data =
                             exerciseDataList.Find(d => d.FileName.Equals(result.FileName));
                         if (data != null) {
                             removeList.Add(data);
@@ -172,8 +179,8 @@ namespace Exercise_Analyzer {
             // Remove the duplicates
             writeInfo("  Removing " + removeList.Count + " duplicates");
             nErrors = 0;
-            failedList = new List<ExerciseData>();
-            foreach (ExerciseData data in removeList) {
+            failedList = new List<GpsData>();
+            foreach (GpsData data in removeList) {
                 res = exerciseDataList.Remove(data);
                 if (!res) {
                     nErrors++;
@@ -197,7 +204,7 @@ namespace Exercise_Analyzer {
         private void dataListSummary(bool verbose = false) {
             writeInfo(NL + "Exercise Data List");
             int nGpx = 0, nTcx = 0;
-            foreach (ExerciseData data in exerciseDataList) {
+            foreach (GpsData data in exerciseDataList) {
                 if (Path.GetExtension(data.FileName.ToLower()) == ".gpx") {
                     nGpx++;
                 } else if (Path.GetExtension(data.FileName.ToLower()) == ".tcx") {
@@ -207,7 +214,7 @@ namespace Exercise_Analyzer {
             writeInfo("  nItems=" + exerciseDataList.Count
             + " NGpx=" + nGpx + " NTcx=" + nTcx);
             if (verbose) {
-                foreach (ExerciseData data in exerciseDataList) {
+                foreach (GpsData data in exerciseDataList) {
                     writeInfo("      " + data.StartTime + " \t" + Path.GetFileName(data.FileName));
                 }
             }
@@ -229,7 +236,7 @@ namespace Exercise_Analyzer {
 
             // Make a new list of the required information
             List<Breakdown> bdList = new List<Breakdown>();
-            foreach (ExerciseData data in exerciseDataList) {
+            foreach (GpsData data in exerciseDataList) {
                 if (String.IsNullOrEmpty(data.Category)) {
                     writeInfo(NL + "createWeeklyReport: No category for "
                         + data.FileName);
@@ -291,7 +298,7 @@ namespace Exercise_Analyzer {
                             curYear = group.Year;
                             curMonth = group.StartTime.ToString("MMMM");
                             curWeek = group.WeekOfYear;
-                            curStartOfWeek = ExerciseData.getStartOfWeek(group.StartTime);
+                            curStartOfWeek = GpsData.getStartOfWeek(group.StartTime);
                             totalWalkingDistance = 0;
                             totalCyclingDistance = 0;
                             totalWorkoutDistance = 0;
@@ -314,7 +321,7 @@ namespace Exercise_Analyzer {
                             }
                             curMonth = group.StartTime.ToString("MMMM");
                             curWeek = group.WeekOfYear;
-                            curStartOfWeek = ExerciseData.getStartOfWeek(group.StartTime);
+                            curStartOfWeek = GpsData.getStartOfWeek(group.StartTime);
                             totalWalkingDistance = 0;
                             totalCyclingDistance = 0;
                             totalWorkoutDistance = 0;
@@ -380,23 +387,23 @@ namespace Exercise_Analyzer {
             sw.Write(curYear + CSV_SEP); // year
             sw.Write(curMonth + CSV_SEP); // month
             sw.Write(curWeek + CSV_SEP); // week
-            sw.Write($"{ExerciseData.formatTimeWeekday(curStartOfWeek)}" + CSV_SEP);
+            sw.Write($"{GpsData.formatTimeWeekday(curStartOfWeek)}" + CSV_SEP);
 
-            sw.Write($"{ExerciseData.formatDuration(totalWalkingDuration)}" + CSV_SEP
-               + $"{ExerciseData.formatDurationMinutes(totalWalkingDuration)}" + CSV_SEP
-               + $"{GpsUtils.M2MI * totalWalkingDistance:f1}" + CSV_SEP);
-            sw.Write($"{ExerciseData.formatDuration(totalCyclingDuration)}" + CSV_SEP
-               + $"{ExerciseData.formatDurationMinutes(totalCyclingDuration)}" + CSV_SEP
-               + $"{GpsUtils.M2MI * totalCyclingDistance:f1}" + CSV_SEP);
-            sw.Write($"{ExerciseData.formatDuration(totalWorkoutDuration)}" + CSV_SEP
-               + $"{ExerciseData.formatDurationMinutes(totalWorkoutDuration)}" + CSV_SEP
-               + $"{GpsUtils.M2MI * totalWorkoutDistance:f1}" + CSV_SEP);
-            sw.Write($"{ExerciseData.formatDuration(totalOtherDuration)}" + CSV_SEP
-               + $"{ExerciseData.formatDurationMinutes(totalOtherDuration)}" + CSV_SEP
-               + $"{GpsUtils.M2MI * totalOtherDistance:f1}" + CSV_SEP);
-            sw.Write($"{ExerciseData.formatDuration(totalDuration)}" + CSV_SEP
-               + $"{ExerciseData.formatDurationMinutes(totalDuration)}" + CSV_SEP
-               + $"{GpsUtils.M2MI * totalDistance:f1}" + CSV_SEP);
+            sw.Write($"{GpsData.formatDuration(totalWalkingDuration)}" + CSV_SEP
+               + $"{GpsData.formatDurationMinutes(totalWalkingDuration)}" + CSV_SEP
+               + $"{GpsData.M2MI * totalWalkingDistance:f1}" + CSV_SEP);
+            sw.Write($"{GpsData.formatDuration(totalCyclingDuration)}" + CSV_SEP
+               + $"{GpsData.formatDurationMinutes(totalCyclingDuration)}" + CSV_SEP
+               + $"{GpsData.M2MI * totalCyclingDistance:f1}" + CSV_SEP);
+            sw.Write($"{GpsData.formatDuration(totalWorkoutDuration)}" + CSV_SEP
+               + $"{GpsData.formatDurationMinutes(totalWorkoutDuration)}" + CSV_SEP
+               + $"{GpsData.M2MI * totalWorkoutDistance:f1}" + CSV_SEP);
+            sw.Write($"{GpsData.formatDuration(totalOtherDuration)}" + CSV_SEP
+               + $"{GpsData.formatDurationMinutes(totalOtherDuration)}" + CSV_SEP
+               + $"{GpsData.M2MI * totalOtherDistance:f1}" + CSV_SEP);
+            sw.Write($"{GpsData.formatDuration(totalDuration)}" + CSV_SEP
+               + $"{GpsData.formatDurationMinutes(totalDuration)}" + CSV_SEP
+               + $"{GpsData.M2MI * totalDistance:f1}" + CSV_SEP);
             sw.Write(NL);
         }
 
@@ -418,19 +425,19 @@ namespace Exercise_Analyzer {
                         sw.Write(col + CSV_SEP);
                     }
                     sw.Write(NL);
-                    foreach (ExerciseData data in exerciseDataList) {
+                    foreach (GpsData data in exerciseDataList) {
                         sw.Write(data.Category + CSV_SEP); // category
                         sw.Write(data.Location + CSV_SEP);  // location
-                        sw.Write(ExerciseData.formatTime(data.StartTime) + CSV_SEP);  // start
-                        sw.Write(ExerciseData.formatTime(data.EndTime) + CSV_SEP);  // end
-                        sw.Write(ExerciseData.formatTimeZone(data.StartTime, data.TZId) + CSV_SEP);  // end
-                        sw.Write($"{GpsUtils.M2MI * data.Distance:f2}" + CSV_SEP);  // distance
-                        sw.Write(ExerciseData.formatDuration(data.Duration) + CSV_SEP);  // duration
+                        sw.Write(GpsData.formatTime(data.StartTime) + CSV_SEP);  // start
+                        sw.Write(GpsData.formatTime(data.EndTime) + CSV_SEP);  // end
+                        sw.Write(GpsData.formatTimeZone(data.StartTime, data.TZId) + CSV_SEP);  // end
+                        sw.Write($"{GpsData.M2MI * data.Distance:f2}" + CSV_SEP);  // distance
+                        sw.Write(GpsData.formatDuration(data.Duration) + CSV_SEP);  // duration
                         sw.Write(data.Duration.TotalSeconds + CSV_SEP);  // duration(s)
-                        sw.Write(ExerciseData.formatSpeed(data.SpeedAvg) + CSV_SEP);  // avg speed
-                        sw.Write(ExerciseData.formatHeartRate(data.HrMin) + CSV_SEP);  // min heart rate
-                        sw.Write(ExerciseData.formatHeartRateAvg(data.HrAvg) + CSV_SEP);  // avg heart rate
-                        sw.Write(ExerciseData.formatHeartRate(data.HrMax) + CSV_SEP);  // max heart rate
+                        sw.Write(GpsData.formatSpeed(data.SpeedAvg) + CSV_SEP);  // avg speed
+                        sw.Write(GpsData.formatHeartRate(data.HrMin) + CSV_SEP);  // min heart rate
+                        sw.Write(GpsData.formatHeartRateAvg(data.HrAvg) + CSV_SEP);  // avg heart rate
+                        sw.Write(GpsData.formatHeartRate(data.HrMax) + CSV_SEP);  // max heart rate
                         sw.Write(NL);
                     }
                     writeInfo(NL + "Wrote STL CSV " + fileName);
@@ -462,7 +469,7 @@ namespace Exercise_Analyzer {
                         sw.Write(col + CSV_SEP);
                     }
                     sw.Write(NL);
-                    foreach (ExerciseData data in exerciseDataList) {
+                    foreach (GpsData data in exerciseDataList) {
                         sw.Write(CSV_SEP);  // id
                         sw.Write(data.Category + CSV_SEP); // category
                         sw.Write(CSV_SEP);  //event
@@ -470,25 +477,25 @@ namespace Exercise_Analyzer {
                         sw.Write(CSV_SEP);  // tags
                         sw.Write(data.StartTime.Year + CSV_SEP);  // year
                         // STL uses 0-based month number
-                        sw.Write(ExerciseData.formatMonthStl(data.StartTime) + CSV_SEP); // month
+                        sw.Write(GpsData.formatMonthStl(data.StartTime) + CSV_SEP); // month
                         sw.Write(cal.GetWeekOfYear(data.StartTime, cwr, dow) + CSV_SEP);  // week of year
-                        sw.Write(ExerciseData.formatTimeStl(data.StartTime) + CSV_SEP);  // start
-                        sw.Write(ExerciseData.formatTimeStl(data.EndTime) + CSV_SEP);  // end
-                        sw.Write($"{GpsUtils.M2MI * data.Distance:f2}" + CSV_SEP);  // distance
-                        sw.Write(ExerciseData.formatDuration(data.Duration) + CSV_SEP);  // duration
+                        sw.Write(GpsData.formatTimeStl(data.StartTime) + CSV_SEP);  // start
+                        sw.Write(GpsData.formatTimeStl(data.EndTime) + CSV_SEP);  // end
+                        sw.Write($"{GpsData.M2MI * data.Distance:f2}" + CSV_SEP);  // distance
+                        sw.Write(GpsData.formatDuration(data.Duration) + CSV_SEP);  // duration
                         sw.Write(data.Duration.TotalSeconds + CSV_SEP);  // duration(s)
                         sw.Write(CSV_SEP);  // calories
-                        sw.Write(ExerciseData.formatSpeed(data.SpeedAvg) + CSV_SEP);  // ave speed
-                        sw.Write(ExerciseData.formatPace(data.SpeedAvg) + CSV_SEP);  // ave pace
-                        sw.Write(ExerciseData.formatPaceSec(data.SpeedAvg) + CSV_SEP);  // ave pace (s)
-                        sw.Write(ExerciseData.formatSpeed(data.SpeedAvgMoving) + CSV_SEP);  // ave moving speed
-                        sw.Write(ExerciseData.formatPace(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace
-                        sw.Write(ExerciseData.formatPaceSec(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace(s)
-                        sw.Write(ExerciseData.formatSpeed(data.SpeedMax) + CSV_SEP);  // max speed
-                        sw.Write(ExerciseData.formatHeartRateStlAvg(data.HrAvg) + CSV_SEP);  // ave heart rate
-                        sw.Write(ExerciseData.formatElevation(data.EleGain) + CSV_SEP);  // elevation gain
-                        sw.Write(ExerciseData.formatElevation(data.EleLoss) + CSV_SEP);  // elevation loss
-                        sw.Write(ExerciseData.formatElevation(data.EleMax) + CSV_SEP);  // elevation max
+                        sw.Write(GpsData.formatSpeed(data.SpeedAvg) + CSV_SEP);  // ave speed
+                        sw.Write(GpsData.formatPace(data.SpeedAvg) + CSV_SEP);  // ave pace
+                        sw.Write(GpsData.formatPaceSec(data.SpeedAvg) + CSV_SEP);  // ave pace (s)
+                        sw.Write(GpsData.formatSpeed(data.SpeedAvgMoving) + CSV_SEP);  // ave moving speed
+                        sw.Write(GpsData.formatPace(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace
+                        sw.Write(GpsData.formatPaceSec(data.SpeedAvgMoving) + CSV_SEP);  // ave moving pace(s)
+                        sw.Write(GpsData.formatSpeed(data.SpeedMax) + CSV_SEP);  // max speed
+                        sw.Write(GpsData.formatHeartRateStlAvg(data.HrAvg) + CSV_SEP);  // ave heart rate
+                        sw.Write(GpsData.formatElevation(data.EleGain) + CSV_SEP);  // elevation gain
+                        sw.Write(GpsData.formatElevation(data.EleLoss) + CSV_SEP);  // elevation loss
+                        sw.Write(GpsData.formatElevation(data.EleMax) + CSV_SEP);  // elevation max
                         sw.Write(NL);
                     }
                     writeInfo(NL + "Wrote STL CSV " + fileName);
@@ -496,6 +503,31 @@ namespace Exercise_Analyzer {
             } catch (Exception ex) {
                 Utils.excMsg("Error writing STL CSV file " + fileName, ex);
                 return;
+            }
+        }
+
+        private void onGpxTcxEvent(object sender, GpxTcxEventArgs e) {
+            string msg = e.Message;
+            switch (e.Type) {
+                case GpxTcxMenu.EventType.MSG:
+                    writeInfo(msg);
+                    break;
+                case GpxTcxMenu.EventType.INFO:
+                    Utils.infoMsg(msg);
+                    break;
+                case GpxTcxMenu.EventType.WARN:
+                    Utils.warnMsg(msg);
+                    break;
+                case GpxTcxMenu.EventType.ERR:
+                    Utils.errMsg(msg);
+                    break;
+                case GpxTcxMenu.EventType.EXC:
+                    Utils.excMsg(msg, e.Exception);
+                    break;
+                default:
+                    Utils.errMsg("Received unknown event type (" + e.Type
+                        + ") from GpsTcxMenu");
+                    break;
             }
         }
 
@@ -539,7 +571,7 @@ namespace Exercise_Analyzer {
                     return;
                 }
                 string[] fileNames = dlg.FileNames;
-                List<ExerciseData> list = processFiles(this, fileNames, processSilent);
+                List<GpsData> list = processFiles(this, fileNames, processSilent);
                 if (list != null) {
                     exerciseDataList.AddRange(list);
                 }
@@ -611,8 +643,8 @@ namespace Exercise_Analyzer {
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 try {
                     string json = File.ReadAllText(dlg.FileName);
-                    List<ExerciseData> dataList =
-                        JsonConvert.DeserializeObject<List<ExerciseData>>(json);
+                    List<GpsData> dataList =
+                        JsonConvert.DeserializeObject<List<GpsData>>(json);
                     if (dataList != null) {
                         exerciseDataList.AddRange(dataList);
                     } else {
@@ -662,7 +694,7 @@ namespace Exercise_Analyzer {
                 return;
             }
             List<string> fileList = new List<string>();
-            foreach (ExerciseData data in exerciseDataList) {
+            foreach (GpsData data in exerciseDataList) {
                 fileList.Add(data.FileName);
             }
             MultiChoiceListDialog dlg = new MultiChoiceListDialog(fileList);
@@ -671,7 +703,7 @@ namespace Exercise_Analyzer {
                 if (selectedList == null || selectedList.Count == 0) {
                     KEUtils.Utils.errMsg("No items selected");
                 }
-                ExerciseData data;
+                GpsData data;
                 foreach (string item in selectedList) {
                     data =
                         exerciseDataList.Find(d => d.FileName.Equals(item));
@@ -690,54 +722,6 @@ namespace Exercise_Analyzer {
             } else {
                 overviewDlg.Visible = true;
             }
-        }
-
-        private void tools_FormatTCX_GPX_click(object sender, EventArgs e) {
-            formatTcxGpx();
-        }
-
-        private void tools_FormatXml_click(object sender, EventArgs e) {
-            formatXml();
-        }
-
-        private void tools_SingleFileInfo_click(object sender, EventArgs e) {
-            getSingleFileInfo(this);
-        }
-
-        private void tools_ChangeTimesTcx_click(object sender, EventArgs e) {
-            changeTimesTcx(this);
-        }
-
-        private void tools_RecalculateTcx_click(object sender, EventArgs e) {
-            recalculateTcx(this);
-        }
-
-        private void tools_InterpolateTcx_click(object sender, EventArgs e) {
-            ToolStripMenuItem item = (ToolStripMenuItem)sender;
-            ExerciseData.InterpolateMode mode;
-            if (item.Text.StartsWith("Match")) {
-                mode = ExerciseData.InterpolateMode.MatchLatLon;
-            } else if (item.Text.StartsWith("Use")) {
-                mode = ExerciseData.InterpolateMode.UseInterval;
-            } else {
-                return;
-            }
-            interpolateTcxFromGpx(this, mode);
-        }
-
-        private void tools_DeleteTcxTrackpoints_click(object sender, EventArgs e) {
-            deleteTcxTrackpoints(this);
-        }
-
-        private void tools_FixPolarGpx_click(object sender, EventArgs e) {
-            string msg = "Existing files will be overwritten with the fixed version."
-                + NL + "The modified time will be retained.";
-            DialogResult res = MessageBox.Show(msg + "\n" + "OK to continue?",
-              "Warning", MessageBoxButtons.YesNo);
-            if (res == DialogResult.No) {
-                return;
-            }
-            fixPolarGpx(this);
         }
 
         private void help_OverviewOnline_click(object sender, EventArgs e) {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KEGpsUtils;
+using System;
 using System.Windows.Forms;
 
 namespace Exercise_Analyzer {
@@ -43,7 +44,7 @@ namespace Exercise_Analyzer {
             }
             set
             {
-                textBoxStartDate.Text = value.ToString(ExerciseData.TimeFormatUTC);
+                textBoxStartDate.Text = value.ToString(GpsData.TimeFormatUTC);
             }
         }
 
@@ -59,7 +60,7 @@ namespace Exercise_Analyzer {
             }
             set
             {
-                textBoxEndDate.Text = value.ToString(ExerciseData.TimeFormatUTC);
+                textBoxEndDate.Text = value.ToString(GpsData.TimeFormatUTC);
             }
         }
 

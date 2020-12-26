@@ -8,59 +8,47 @@ namespace Exercise_Analyzer {
             InitializeComponent();
         }
 
-        public string Title
-        {
-            get
-            {
+        public string Title {
+            get {
                 return this.Text;
             }
-            set
-            {
+            set {
                 this.Text = value;
             }
         }
 
-        public string Label
-        {
-            get
-            {
+        public string Label {
+            get {
                 return labelMsg.Text;
             }
-            set
-            {
+            set {
                 labelMsg.Text = value;
             }
         }
 
-        public DateTime StartDate
-        {
-            get
-            {
+        public DateTime StartDate {
+            get {
                 try {
                     return DateTime.Parse(textBoxStartDate.Text);
                 } catch (Exception) {
                     return DateTime.MinValue;
                 }
             }
-            set
-            {
-                textBoxStartDate.Text = value.ToString(GpsData.TimeFormatUTC);
+            set {
+                textBoxStartDate.Text = value.ToString(GpsData.UTC_FORMAT);
             }
         }
 
-        public DateTime EndDate
-        {
-            get
-            {
+        public DateTime EndDate {
+            get {
                 try {
                     return DateTime.Parse(textBoxEndDate.Text);
                 } catch (Exception) {
                     return DateTime.MinValue;
                 }
             }
-            set
-            {
-                textBoxEndDate.Text = value.ToString(GpsData.TimeFormatUTC);
+            set {
+                textBoxEndDate.Text = value.ToString(GpsData.UTC_FORMAT);
             }
         }
 

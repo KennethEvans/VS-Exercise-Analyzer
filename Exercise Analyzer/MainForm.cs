@@ -411,7 +411,7 @@ namespace Exercise_Analyzer {
             if (exerciseDataList == null) return;
             string[] csvColumnNames = new string[] {"Category", "Location",
                 "Start", "Finish", "Time Zone", "Distance", "Duration", "Duration(s)",
-                "Avg Speed", "Min HR", "Avg HR", "Max HR"};
+                "Avg Speed", "Mov Speed", "Min HR", "Avg HR", "Max HR"};
 
             // From https://docs.microsoft.com/en-us/dotnet/api/system.globalization.calendar.getweekofyear?view=netframework-4.8
             CultureInfo ci = new CultureInfo("en-US");
@@ -435,6 +435,7 @@ namespace Exercise_Analyzer {
                         sw.Write(GpsData.formatDuration(data.Duration) + CSV_SEP);  // duration
                         sw.Write(data.Duration.TotalSeconds + CSV_SEP);  // duration(s)
                         sw.Write(GpsData.formatSpeed(data.SpeedAvg) + CSV_SEP);  // avg speed
+                        sw.Write(GpsData.formatSpeed(data.SpeedAvgMoving) + CSV_SEP);  // avg moving speed
                         sw.Write(GpsData.formatHeartRate(data.HrMin) + CSV_SEP);  // min heart rate
                         sw.Write(GpsData.formatHeartRateAvg(data.HrAvg) + CSV_SEP);  // avg heart rate
                         sw.Write(GpsData.formatHeartRate(data.HrMax) + CSV_SEP);  // max heart rate

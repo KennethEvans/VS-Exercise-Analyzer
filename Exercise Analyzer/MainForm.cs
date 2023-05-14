@@ -2,6 +2,11 @@
 //#define infoShowFilenames
 // #define exerciseutils
 
+using KEGpsUtils;
+using KEUtils.About;
+using KEUtils.ScrolledHTML2;
+using KEUtils.Utils;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,12 +14,8 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
-using About;
-using KEUtils;
-using Newtonsoft.Json;
-using ScrolledHTML;
-using KEGpsUtils;
 
 namespace Exercise_Analyzer {
     public partial class MainForm : Form {
@@ -23,7 +24,7 @@ namespace Exercise_Analyzer {
         public enum Category { Unknown, Walking, Cycling, Workout, Other }
         private List<GpsData> exerciseDataList;
         private const bool processSilent = false;
-        private static ScrolledHTMLDialog overviewDlg;
+        private static ScrolledHTMLDialog2 overviewDlg;
 
         private GpxTcxMenu gpxTcxMenu;
 
@@ -537,7 +538,14 @@ namespace Exercise_Analyzer {
         }
 
         private void help_About_click(object sender, EventArgs e) {
-            AboutBox dlg = new AboutBox();
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            Image image = null;
+            try {
+                image = Image.FromFile(@".\Help\ExerciseAnalyzer.256x256.png");
+            } catch (Exception ex) {
+                Utils.excMsg("Failed to get AboutBox image", ex);
+            }
+            AboutBox dlg = new AboutBox(image, assembly);
             dlg.ShowDialog();
         }
 
@@ -691,7 +699,7 @@ namespace Exercise_Analyzer {
 
         private void data_SingleItemInfo_click(object sender, EventArgs e) {
             if (exerciseDataList == null || exerciseDataList.Count == 0) {
-                KEUtils.Utils.errMsg("There are no available items");
+                Utils.errMsg("There are no available items");
                 return;
             }
             List<string> fileList = new List<string>();
@@ -702,7 +710,7 @@ namespace Exercise_Analyzer {
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 List<string> selectedList = dlg.SelectedList;
                 if (selectedList == null || selectedList.Count == 0) {
-                    KEUtils.Utils.errMsg("No items selected");
+                    Utils.errMsg("No items selected");
                 }
                 GpsData data;
                 foreach (string item in selectedList) {
@@ -717,8 +725,9 @@ namespace Exercise_Analyzer {
             // Create, show, or set visible the overview dialog as appropriate
             if (overviewDlg == null) {
                 MainForm app = (MainForm)FindForm().FindForm();
-                overviewDlg = new ScrolledHTMLDialog(
-                    KEUtils.Utils.getDpiAdjustedSize(app, new Size(800, 600)));
+                overviewDlg = new ScrolledHTMLDialog2(
+                    Utils.getDpiAdjustedSize(app, new Size(800, 600)),
+                    "Overview", @"Help\Overview.html");
                 overviewDlg.Show();
             } else {
                 overviewDlg.Visible = true;

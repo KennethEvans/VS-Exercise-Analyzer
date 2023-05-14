@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using KEUtils;
+using KEUtils.Utils;
 
 namespace Exercise_Analyzer {
 
